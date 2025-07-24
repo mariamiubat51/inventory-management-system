@@ -6,7 +6,6 @@
     <a href="{{ route('accounts.index') }}" class="btn btn-secondary mb-3">Back</a>
 
     @if(count($entries))
-
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -19,7 +18,7 @@
         <tbody>
             @foreach($entries as $entry)
             <tr>
-                <td>{{ $entry->date }}</td>
+                <td>{{ $entry->transaction_date->format('Y-m-d') }}</td>
                 <td>{{ ucfirst($entry->type) }}</td>
                 <td class="{{ $entry->type == 'debit' ? 'text-danger' : 'text-success' }}">
                     {{ number_format($entry->amount, 2) }}

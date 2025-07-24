@@ -7,6 +7,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\TransactionLogController;
+
 
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -23,6 +25,9 @@ Route::get('/accounts/{id}/ledger', [AccountController::class, 'ledger'])->name(
 
 
 Route::resource('purchases', PurchaseController::class);
+
+Route::resource('transaction_logs', TransactionLogController::class)->only(['index', 'create', 'store']);
+
 
 
 Route::get('/', function () {

@@ -98,9 +98,9 @@ class AccountController extends Controller
     {
         $account = Account::findOrFail($id);
 
-        // TODO: Fetch ledger transactions for the account.
-        // For now, just a dummy empty array
-        $entries = [];
+        $entries = \App\Models\TransactionLog::where('account_id', $id)
+                    ->orderBy('transaction_date', 'desc')
+                    ->get();
 
         return view('accounts.ledger', compact('account', 'entries'));
     }

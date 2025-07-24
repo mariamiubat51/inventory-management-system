@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers;
 
 use App\Models\Purchase;
@@ -10,23 +9,28 @@ use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Models\Account;
+use App\Models\TransactionLog;
 use Carbon\Carbon;
-
 
 class PurchaseController extends Controller
 {
     public function index()
-    {
-        $purchases = Purchase::with('supplier')->latest()->get();
-        return view('purchases.index', compact('purchases'));
-    }
+{
+    // Load supplier relation and count related purchase items
+    $purchases = Purchase::with('supplier')->withCount('items')->latest()->paginate(15);
+
+    return view('purchases.index', compact('purchases'));
+}
+
 
     public function create()
     {
         $suppliers = Supplier::all();
         $products = Product::all();
+        $accounts = Account::all();
 
-        return view('purchases.create', compact('suppliers', 'products'));
+        return view('purchases.create', compact('suppliers', 'products', 'accounts'));
     }
 
     public function store(Request $request)
@@ -38,6 +42,7 @@ class PurchaseController extends Controller
             'quantity.*' => 'required|integer|min:1',
             'buying_price.*' => 'required|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
+            'account_id' => 'required|exists:accounts,id',
         ]);
 
         DB::beginTransaction();
@@ -69,7 +74,28 @@ class PurchaseController extends Controller
                 'notes' => $request->notes,
             ]);
 
-            // Create purchase items
+            // Create transaction log for paid amount (payment reduces cash, so debit)
+            if ($request->paid_amount > 0) {
+                try {
+                    $log = TransactionLog::create([
+                        'transaction_type' => 'purchase',
+                        'related_id' => $purchase->id,
+                        'account_id' => $request->account_id,
+                        'amount' => $request->paid_amount,
+                        'type' => 'debit',
+                        'transaction_date' => $request->purchase_date,
+                        'description' => 'Payment made for purchase #' . $purchase->invoice_no,
+                    ]);
+                    if (!$log) {
+                        \Log::error("Failed to create transaction log for purchase ID: " . $purchase->id);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("Transaction log creation error (store): " . $e->getMessage());
+                    throw $e;
+                }
+            }
+
+            // Create purchase items and update stock
             foreach ($request->product_id as $index => $productId) {
                 $quantity = $request->quantity[$index];
                 $buyingPrice = $request->buying_price[$index];
@@ -86,7 +112,7 @@ class PurchaseController extends Controller
                 // Update product stock
                 $product = Product::find($productId);
                 $product->stock_quantity += $quantity;
-                $product->buying_price = $buyingPrice; // optional
+                $product->buying_price = $buyingPrice;
                 $product->save();
             }
 
@@ -103,8 +129,9 @@ class PurchaseController extends Controller
         $purchase = Purchase::with('items.product')->findOrFail($id);
         $suppliers = Supplier::all();
         $products = Product::all();
+        $accounts = Account::all();  // Added accounts here
 
-        return view('purchases.edit', compact('purchase', 'suppliers', 'products'));
+        return view('purchases.edit', compact('purchase', 'suppliers', 'products', 'accounts'));
     }
 
     public function update(Request $request, $id)
@@ -116,6 +143,7 @@ class PurchaseController extends Controller
             'quantity.*' => 'required|integer|min:1',
             'buying_price.*' => 'required|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
+            'account_id' => 'required|exists:accounts,id',  // Added validation here
         ]);
 
         DB::beginTransaction();
@@ -123,7 +151,7 @@ class PurchaseController extends Controller
         try {
             $purchase = Purchase::findOrFail($id);
 
-            // First, revert stock for old purchase items
+            // Revert stock for old purchase items
             foreach ($purchase->items as $item) {
                 $product = Product::find($item->product_id);
                 $product->stock_quantity -= $item->quantity;
@@ -131,8 +159,6 @@ class PurchaseController extends Controller
             }
 
             $totalAmount = 0;
-
-            // Calculate new total amount
             foreach ($request->product_id as $index => $productId) {
                 $totalAmount += $request->quantity[$index] * $request->buying_price[$index];
             }
@@ -151,6 +177,32 @@ class PurchaseController extends Controller
                 'purchase_status' => 'completed',
                 'notes' => $request->notes,
             ]);
+
+            // Remove old transaction logs for this purchase
+            TransactionLog::where('transaction_type', 'purchase')
+                ->where('related_id', $purchase->id)
+                ->delete();
+
+            // Create new transaction log (payment reduces cash, so debit)
+            if ($request->paid_amount > 0) {
+                try {
+                    $log = TransactionLog::create([
+                        'transaction_type' => 'purchase',
+                        'related_id' => $purchase->id,
+                        'account_id' => $request->account_id,
+                        'amount' => $request->paid_amount,
+                        'type' => 'debit',
+                        'transaction_date' => $request->purchase_date,
+                        'description' => 'Updated payment for purchase #' . $purchase->invoice_no,
+                    ]);
+                    if (!$log) {
+                        \Log::error("Failed to create transaction log for purchase ID: " . $purchase->id);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error("Transaction log creation error (update): " . $e->getMessage());
+                    throw $e;
+                }
+            }
 
             // Delete old purchase items
             $purchase->items()->delete();
@@ -171,7 +223,7 @@ class PurchaseController extends Controller
 
                 $product = Product::find($productId);
                 $product->stock_quantity += $quantity;
-                $product->buying_price = $buyingPrice; // optional
+                $product->buying_price = $buyingPrice;
                 $product->save();
             }
 
@@ -189,6 +241,4 @@ class PurchaseController extends Controller
         $purchase = Purchase::with('supplier', 'items.product')->findOrFail($id);
         return view('purchases.show', compact('purchase'));
     }
-
-
 }

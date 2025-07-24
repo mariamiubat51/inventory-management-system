@@ -28,6 +28,20 @@
                 <input type="date" name="purchase_date" class="form-control" value="{{ old('purchase_date', date('Y-m-d')) }}" required>
             </div>
         </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label>Account</label>
+                <select name="account_id" class="form-control" required>
+                    <option value="">-- Select Account --</option>
+                    @foreach($accounts as $account)
+                        <option value="{{ $account->id }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
+                            {{ $account->account_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
 
         <table class="table table-bordered" id="products-table">
             <thead class="table-light">

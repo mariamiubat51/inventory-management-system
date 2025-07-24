@@ -13,7 +13,7 @@
         @method('PUT')
 
         <div class="row mb-3">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label>Supplier</label>
                 <select name="supplier_id" class="form-control" required>
                     <option value="">-- Select Supplier --</option>
@@ -25,10 +25,22 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label>Purchase Date</label>
                 <input type="date" name="purchase_date" class="form-control" 
                     value="{{ old('purchase_date', $purchase->purchase_date->format('Y-m-d')) }}" required>
+            </div>
+            <div class="col-md-4">
+                <label>Account</label>
+                <select name="account_id" class="form-control" required>
+                    <option value="">-- Select Account --</option>
+                    @foreach($accounts as $account)
+                        <option value="{{ $account->id }}" 
+                            {{ (old('account_id', optional(optional($purchase->transactionLogs)->first())->account_id) == $account->id) ? 'selected' : '' }}
+                            {{ $account->account_name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </div>
 
@@ -128,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Autofill buying price on product selection
     document.querySelector('#products-table').addEventListener('change', function (e) {
         if (e.target.classList.contains('product-select')) {
             const row = e.target.closest('tr');
@@ -143,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Update subtotals and paid amount
     function updateSubtotals() {
         let total = 0;
 
@@ -168,13 +178,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Update item count
     function updateItemCount() {
         const count = document.querySelectorAll('#products-table tbody tr').length;
         document.getElementById('item-count').textContent = count;
     }
 
-    // Add new product row
     document.querySelector('#add-row').addEventListener('click', function () {
         const tbody = document.querySelector('#products-table tbody');
         const row = tbody.querySelector('tr');
@@ -191,12 +199,10 @@ document.addEventListener('DOMContentLoaded', function () {
         updateProductOptions();
     });
 
-    // Recalculate on input
     document.querySelector('#products-table').addEventListener('input', function () {
         updateSubtotals();
     });
 
-    // Remove product row
     document.querySelector('#products-table').addEventListener('click', function (e) {
         if (e.target.classList.contains('remove-row')) {
             const rows = document.querySelectorAll('#products-table tbody tr');
@@ -209,7 +215,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Track manual changes in Paid Amount
     document.querySelector('input[name="paid_amount"]').addEventListener('input', function () {
         this.dataset.manual = true;
         const paid = parseFloat(this.value) || 0;
@@ -219,7 +224,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('input[name="due_amount"]').value = due >= 0 ? due.toFixed(2) : '0.00';
     });
 
-    // Initial setup
     updateSubtotals();
     updateItemCount();
     updateProductOptions();

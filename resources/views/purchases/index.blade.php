@@ -4,7 +4,9 @@
 <div class="container">
     <h2 class="mb-4">Purchase List</h2>
 
-    <a href="{{ route('purchases.create') }}" class="btn btn-success mb-3" style="background-color: rgba(95, 58, 58, 1);">➕ Add Purchase</a>
+    <a href="{{ route('purchases.create') }}" class="btn btn-success mb-3" style="background-color: rgba(95, 58, 58, 1);">
+        ➕ Add Purchase
+    </a>
 
     <table class="table table-bordered table-hover">
         <thead class="table-dark">
@@ -27,7 +29,7 @@
                 <td>{{ $purchase->id }}</td>
                 <td>{{ $purchase->invoice_no }}</td>
                 <td>{{ $purchase->supplier->name ?? 'N/A' }}</td>
-                <td>{{ $purchase->purchase_date->format('Y-m-d') }}</td>
+                <td>{{ \Carbon\Carbon::parse($purchase->purchase_date)->format('Y-m-d') }}</td>
                 <td>{{ $purchase->items_count }} items</td>
                 <td>{{ number_format($purchase->total_amount, 2) }}৳</td>
                 <td>{{ number_format($purchase->paid_amount, 2) }}৳</td>
@@ -58,5 +60,10 @@
             @endforelse
         </tbody>
     </table>
+
+    {{-- Pagination links --}}
+    <div class="d-flex justify-content-center">
+        {{ $purchases->links() }}
+    </div>
 </div>
 @endsection

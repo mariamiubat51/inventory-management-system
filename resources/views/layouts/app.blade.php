@@ -44,9 +44,11 @@
     <a href="{{ route('suppliers.index') }}"><i class="fas fa-users me-2"></i>Suppliers</a>
     <a href="{{ url('/purchases') }}"><i class="fas fa-shopping-cart me-2"></i>Purchases</a>
     <a href="#"><i class="fas fa-cash-register me-2"></i>Sales</a>
+    <a href="#"><i class="fas fa-wallet me-2"></i>Expense</a>
+    <a href="#"><i class="fas fa-cash-register me-2"></i>POS</a>
     <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
     <a href="{{ url('/accounts') }}"><i class="fa-solid fa-building-columns me-2"></i>Accounts</a>
-    <a href="#"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>
+    <a href="{{ url('/transaction_logs') }}"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>
     <a href="#"><i class="fas fa-user me-2"></i>Users</a>
     <a href="#"><i class="fas fa-cog me-2"></i>Settings</a>
   </div>
