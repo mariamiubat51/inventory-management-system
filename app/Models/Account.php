@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasMany; //one-to-many Relation
 
 class Account extends Model
 {
@@ -21,6 +21,6 @@ class Account extends Model
      */
     public function ledgerEntries(): HasMany
     {
-        return $this->hasMany(Ledger::class);
+        return $this->hasMany(Ledger::class);  // It means: "One account has many ledger entries."
     }
 }

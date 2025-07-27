@@ -25,7 +25,7 @@ class AccountController extends Controller
 
     public function create()
     {
-        $types = ['cash', 'bank', 'others']; // Match ENUM in database
+        $types = ['cash', 'bank', 'bkash', 'nagad', 'others']; // Match ENUM in database
         return view('accounts.create', compact('types'));
     }
 
@@ -33,7 +33,7 @@ class AccountController extends Controller
     {
         $request->validate([
             'account_name' => 'required|string|max:255',
-            'account_type' => 'required|in:cash,bank,others', // Match ENUM
+            'account_type' => 'required|in:cash,bank,bkash,nagad,others', // Match ENUM
             'initial_balance' => 'required|numeric|min:0',
         ]);
 
@@ -104,6 +104,9 @@ class AccountController extends Controller
 
         return view('accounts.ledger', compact('account', 'entries'));
     }
+
+    // $entries → all the transaction logs for that account
+
 
 
     /*    public function ledger($id)

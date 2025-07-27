@@ -32,15 +32,25 @@
             </div>
             <div class="col-md-4">
                 <label>Account</label>
-                <select name="account_id" class="form-control" required>
-                    <option value="">-- Select Account --</option>
-                    @foreach($accounts as $account)
-                        <option value="{{ $account->id }}" 
-                            {{ (old('account_id', optional(optional($purchase->transactionLogs)->first())->account_id) == $account->id) ? 'selected' : '' }}
-                            {{ $account->account_name }}
-                        </option>
-                    @endforeach
-                </select>
+                <select name="account_id" id="account_id" class="form-control" required>
+                <option value="">-- Select Account --</option>
+                @foreach($accounts as $account)
+                    <option value="{{ $account->id }}" 
+                        data-balance="{{ $account->total_balance }}"
+                        {{ (old('account_id', optional(optional($purchase->transactionLogs)->first())->account_id) == $account->id) ? 'selected' : '' }}>
+                        {{ $account->account_name }}
+                    </option>
+                @endforeach
+            </select>
+
+            @error('account_id')
+                <div class="text-danger">{{ $message }}</div>
+            @enderror
+
+            <small class="form-text text-muted mt-1" id="account_balance_text">
+                Available Balance: 0.00
+            </small>
+
             </div>
         </div>
 
@@ -100,6 +110,10 @@
                 <label>Paid Amount</label>
                 <input type="number" name="paid_amount" class="form-control" step="0.01" min="0" required 
                     value="{{ old('paid_amount', $purchase->paid_amount) }}">
+
+                    @error('paid_amount')
+                        <div class="text-danger">{{ $message }}</div>
+                    @enderror
             </div>
             <div class="col-md-4">
                 <label>Due Amount</label>
@@ -227,6 +241,30 @@ document.addEventListener('DOMContentLoaded', function () {
     updateSubtotals();
     updateItemCount();
     updateProductOptions();
+
+
+    const accountSelect = document.getElementById('account_id');
+    const balanceText = document.getElementById('account_balance_text');
+    const paidInput = document.querySelector('input[name="paid_amount"]');
+
+    function updateAccountBalanceDisplay() {
+        const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+        const balance = selectedOption ? parseFloat(selectedOption.getAttribute('data-balance')) || 0 : 0;
+        balanceText.textContent = `Available Balance: ${balance.toFixed(2)}`;
+
+        // If paid amount exceeds balance, add error styling
+        if (parseFloat(paidInput.value) > balance) {
+            paidInput.classList.add('is-invalid');
+        } else {
+            paidInput.classList.remove('is-invalid');
+        }
+    }
+
+    accountSelect.addEventListener('change', updateAccountBalanceDisplay);
+    paidInput.addEventListener('input', updateAccountBalanceDisplay);
+
+    // Initialize balance display on page load
+    updateAccountBalanceDisplay();
 
 });
 </script>

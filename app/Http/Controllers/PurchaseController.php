@@ -16,13 +16,12 @@ use Carbon\Carbon;
 class PurchaseController extends Controller
 {
     public function index()
-{
-    // Load supplier relation and count related purchase items
-    $purchases = Purchase::with('supplier')->withCount('items')->latest()->paginate(15);
+    {
+        $purchases = Purchase::with('supplier')->withCount('items')->latest()->paginate(15);
+        $accounts = Account::all(); // required for due payment dropdown
 
-    return view('purchases.index', compact('purchases'));
-}
-
+        return view('purchases.index', compact('purchases', 'accounts'));
+    }
 
     public function create()
     {
@@ -44,6 +43,17 @@ class PurchaseController extends Controller
             'paid_amount' => 'required|numeric|min:0',
             'account_id' => 'required|exists:accounts,id',
         ]);
+
+        // balance check  
+        $account = Account::find($request->account_id);
+        if (!$account) {
+            return back()->withInput()->withErrors(['account_id' => 'Selected account not found.']);
+        }
+        if ($request->paid_amount > $account->total_balance) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => "Insufficient balance in the selected account. Available: {$account->total_balance}",
+            ]);
+        }
 
         DB::beginTransaction();
 
@@ -95,6 +105,10 @@ class PurchaseController extends Controller
                 }
             }
 
+            $account->total_balance -= $request->paid_amount;
+            $account->save();
+
+
             // Create purchase items and update stock
             foreach ($request->product_id as $index => $productId) {
                 $quantity = $request->quantity[$index];
@@ -145,6 +159,17 @@ class PurchaseController extends Controller
             'paid_amount' => 'required|numeric|min:0',
             'account_id' => 'required|exists:accounts,id',  // Added validation here
         ]);
+
+        // balance check 
+        $account = Account::find($request->account_id);
+        if (!$account) {
+            return back()->withInput()->withErrors(['account_id' => 'Selected account not found.']);
+        }
+        if ($request->paid_amount > $account->total_balance) {
+            return back()->withInput()->withErrors([
+                'paid_amount' => "Insufficient balance in the selected account. Available: {$account->total_balance}",
+            ]);
+        }
 
         DB::beginTransaction();
 
@@ -204,6 +229,15 @@ class PurchaseController extends Controller
                 }
             }
 
+            // Revert old payment first
+            $account->total_balance += $purchase->paid_amount;
+
+            // Subtract new payment
+            $account->total_balance -= $request->paid_amount;
+
+            $account->save();
+
+
             // Delete old purchase items
             $purchase->items()->delete();
 
@@ -241,4 +275,51 @@ class PurchaseController extends Controller
         $purchase = Purchase::with('supplier', 'items.product')->findOrFail($id);
         return view('purchases.show', compact('purchase'));
     }
+
+    public function payDue(Request $request, $id)
+    {
+        $request->validate([
+            'account_id' => 'required|exists:accounts,id',
+            'pay_amount' => 'required|numeric|min:0.01',
+        ]);
+
+        $purchase = Purchase::findOrFail($id);
+        $account = Account::findOrFail($request->account_id);
+
+        if ($request->pay_amount > $purchase->due_amount) {
+            return back()->with('error', 'Payment exceeds due.');
+        }
+
+        if ($request->pay_amount > $account->total_balance) {
+            return back()->with('error', 'Not enough account balance.');
+        }
+
+        // Update account balance
+        $account->total_balance -= $request->pay_amount;
+        $account->save();
+
+        // Update purchase payment info
+        $purchase->paid_amount += $request->pay_amount;
+        $purchase->due_amount = $purchase->total_amount - $purchase->paid_amount;
+
+        if ($purchase->due_amount == 0) {
+            $purchase->payment_status = 'fully_paid';
+        } elseif ($purchase->paid_amount > 0) {
+            $purchase->payment_status = 'partially_paid';
+        }
+
+        $purchase->save();
+
+        // Log transaction
+        TransactionLog::create([
+            'account_id' => $account->id,
+            'transaction_type' => 'Debit',
+            'amount' => $request->pay_amount,
+            'description' => 'Due payment for Purchase #' . $purchase->invoice_no,
+            'transaction_date' => now(),
+        ]);
+
+    return redirect()->route('purchases.index')->with('success', 'Due paid successfully.');
+    }
+
 }

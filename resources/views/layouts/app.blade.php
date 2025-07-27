@@ -41,6 +41,7 @@
     <a href="{{ route('dashboard') }}"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
     <a href="{{ route('products.index') }}"><i class="fas fa-boxes me-2"></i>Products</a>
     <a href="#"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
+    <a href="#"><i class="fas fa-user me-2"></i>Customers</a>
     <a href="{{ route('suppliers.index') }}"><i class="fas fa-users me-2"></i>Suppliers</a>
     <a href="{{ url('/purchases') }}"><i class="fas fa-shopping-cart me-2"></i>Purchases</a>
     <a href="#"><i class="fas fa-cash-register me-2"></i>Sales</a>
@@ -49,7 +50,7 @@
     <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
     <a href="{{ url('/accounts') }}"><i class="fa-solid fa-building-columns me-2"></i>Accounts</a>
     <a href="{{ url('/transaction_logs') }}"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>
-    <a href="#"><i class="fas fa-user me-2"></i>Users</a>
+    <a href="{{ url('/users')}}"><i class="fas fa-user me-2"></i>Users</a>
     <a href="#"><i class="fas fa-cog me-2"></i>Settings</a>
   </div>
 
@@ -58,5 +59,8 @@
   </div>
 
   @stack('scripts')
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -49,6 +49,7 @@
     <a href="#"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
     <a href="{{ url('/products') }}"><i class="fas fa-boxes me-2"></i>Products</a>
     <a href="#"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
+    <a href="#"><i class="fas fa-user me-2"></i>Customers</a>
     <a href="{{ url('/suppliers') }}"><i class="fas fa-users me-2"></i>Suppliers</a>
     <a href="{{ url('/purchases')}}"><i class="fas fa-shopping-cart me-2"></i>Purchases</a>
     <a href="#"><i class="fas fa-cash-register me-2"></i>Sales</a>
@@ -57,7 +58,7 @@
     <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
     <a href="{{ url('/accounts') }}"><i class="fas fa-solid fa-building-columns"></i>Accounts</a>
     <a href="{{ url('/transaction_logs') }}"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>
-    <a href="#"><i class="fas fa-user me-2"></i>Users</a>
+    <a href="{{ url('/users')}}"><i class="fas fa-user me-2"></i>Users</a>
     <a href="#"><i class="fas fa-cog me-2"></i>Settings</a>
   </div>
 
