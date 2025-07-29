@@ -9,6 +9,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\TransactionLogController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SaleController;
 
 
 
@@ -20,7 +21,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     
 Route::resource('products', ProductController::class);
 
+
 Route::resource('suppliers', SupplierController::class);
+
 
 Route::resource('accounts', AccountController::class);
 Route::get('/accounts/{id}/ledger', [AccountController::class, 'ledger'])->name('accounts.ledger');
@@ -34,6 +37,9 @@ Route::resource('transaction_logs', TransactionLogController::class)->only(['ind
 
 
 Route::resource('users', UserController::class);
+
+
+Route::resource('sales', SaleController::class);
 
 
 Route::get('/', function () {
