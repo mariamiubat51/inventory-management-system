@@ -110,6 +110,15 @@
             <div class="col-md-4">
                 <div class="card p-3 h-100 bg-transparent border-0">
                     <div class="mb-3">
+                        <label for="account_id" class="form-label">Account</label>
+                        <select name="account_id" id="account_id" class="form-select" required>
+                            <option value="">-- Select Account --</option>
+                            @foreach (\App\Models\Account::all() as $account)
+                                <option value="{{ $account->id }}">{{ $account->account_name }} (Balance: {{ number_format($account->total_balance, 2) }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label for="note">Note</label>
                         <textarea name="note" id="note" rows="6" class="form-control">{{ old('note') }}</textarea>
                     </div>

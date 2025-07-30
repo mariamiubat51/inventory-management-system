@@ -46,12 +46,7 @@
                 <td>
                     <a href="{{ route('purchases.show', $purchase->id) }}" class="btn btn-sm btn-info mt-1">👁 View</a>
                     <a href="{{ route('purchases.edit', $purchase->id) }}" class="btn btn-sm btn-warning mt-1">✏️ Edit</a>
-                    <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase?')">
-                        @csrf
-                        @method('DELETE')
-                        <button class="btn btn-sm btn-danger mt-1">🗑️ Delete</button>
-                    </form>
-
+                    
                     @if($purchase->due_amount > 0)
                         <!-- Pay Due Button -->
                         <button class="btn btn-sm btn-secondary mt-1" data-bs-toggle="modal"
@@ -59,6 +54,12 @@
                             💰 Pay Due
                         </button>
                     @endif
+                    
+                    <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase?')">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn btn-sm btn-danger mt-1">🗑️ Delete</button>
+                    </form>
                 </td>
             </tr>
             @empty

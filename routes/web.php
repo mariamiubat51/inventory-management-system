@@ -40,6 +40,8 @@ Route::resource('users', UserController::class);
 
 
 Route::resource('sales', SaleController::class);
+Route::post('/sales/{sale}/pay-due', [SaleController::class, 'payDue'])->name('sales.payDue');
+
 
 
 Route::get('/', function () {

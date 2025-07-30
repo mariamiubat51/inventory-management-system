@@ -9,6 +9,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use App\Models\Account;
+use App\Models\TransactionLog;
+use Carbon\Carbon;
+
 
 class SaleController extends Controller
 {
@@ -16,7 +20,9 @@ class SaleController extends Controller
     public function index()
     {
         $sales = Sale::with('customer')->latest()->paginate(10);
-        return view('sales.index', compact('sales'));
+        $accounts = Account::all(); 
+
+        return view('sales.index', compact('sales', 'accounts'));
     }
 
     // Show create sale form
@@ -39,6 +45,7 @@ class SaleController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
             'payment_method' => 'required|string',
+            'account_id' => 'required|exists:accounts,id',
         ]);
 
         DB::beginTransaction();
@@ -69,26 +76,26 @@ class SaleController extends Controller
                 'note' => $request->note,
             ]);
 
-            foreach ($request->product_id as $i => $productId) {
-                $qty = $request->quantity[$i];
-                $price = $request->selling_price[$i];
-                $total = $qty * $price;
+            // After the foreach loop ends — CORRECT PLACE
+            if ($request->paid_amount > 0 && $request->has('account_id')) {
+                $account = Account::find($request->account_id);
 
-                $product = Product::findOrFail($productId);
-                if ($product->stock_quantity < $qty) {
-                    throw new \Exception("Not enough stock for product: {$product->name}");
+                if ($account) {
+                    // Increase account balance only once
+                    $account->total_balance += $request->paid_amount;
+                    $account->save();
+
+                    // Create transaction log entry
+                    TransactionLog::create([
+                        'transaction_date' => Carbon::now(),
+                        'transaction_type' => 'Income',
+                        'account_id' => $account->id,
+                        'amount' => $request->paid_amount,
+                        'description' => 'Sale Invoice: ' . $sale->invoice_no,
+                        'related_model' => 'Sale',
+                        'related_model_id' => $sale->id,
+                    ]);
                 }
-
-                $product->stock_quantity -= $qty;
-                $product->save();
-
-                SaleItem::create([
-                    'sale_id' => $sale->id,
-                    'product_id' => $productId,
-                    'quantity' => $qty,
-                    'selling_price' => $price,
-                    'total' => $total,
-                ]);
             }
 
             // TODO: Add transaction log if needed
@@ -195,6 +202,33 @@ class SaleController extends Controller
             // TODO: Update transaction log if needed
 
             DB::commit();
+            // Handle account balance update and transaction log on update
+            if ($request->paid_amount > 0 && $request->has('account_id')) {
+                $account = Account::find($request->account_id);
+
+                if ($account) {
+                    // Optional: Adjust the old paid_amount (not required if replacing fully)
+                    $account->total_balance += $request->paid_amount;
+                    $account->save();
+
+                    // Optional: Delete old transaction log for this sale
+                    TransactionLog::where('related_model', 'Sale')
+                                ->where('related_model_id', $sale->id)
+                                ->delete();
+
+                    // Create updated transaction log
+                    TransactionLog::create([
+                        'transaction_date' => Carbon::now(),
+                        'transaction_type' => 'Income',
+                        'account_id' => $account->id,
+                        'amount' => $request->paid_amount,
+                        'description' => 'Updated Sale Invoice: ' . $sale->invoice_no,
+                        'related_model' => 'Sale',
+                        'related_model_id' => $sale->id,
+                    ]);
+                }
+            }
+
             return redirect()->route('sales.index')->with('success', 'Sale updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -229,4 +263,45 @@ class SaleController extends Controller
             return back()->withErrors($e->getMessage());
         }
     }
+
+    public function payDue(Request $request, Sale $sale)
+    {
+        $request->validate([
+            'account_id' => 'required|exists:accounts,id',
+            'pay_amount' => 'required|numeric|min:0.01|max:' . $sale->due_amount,
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $account = Account::findOrFail($request->account_id);
+
+            // Update Sale
+            $sale->paid_amount += $request->pay_amount;
+            $sale->due_amount -= $request->pay_amount;
+            $sale->save();
+
+            // Update Account (💰 increase balance)
+            $account->total_balance += $request->pay_amount;
+            $account->save();
+
+            // Log Transaction
+            TransactionLog::create([
+                'transaction_date' => Carbon::now(),
+                'transaction_type' => 'Income',
+                'account_id' => $account->id,
+                'amount' => $request->pay_amount,
+                'description' => 'Due payment for Sale Invoice ' . $sale->invoice_no,
+                'related_model' => 'Sale',
+                'related_model_id' => $sale->id,
+            ]);
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Due paid successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors($e->getMessage());
+        }
+    }
+
 }
