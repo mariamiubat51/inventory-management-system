@@ -112,7 +112,7 @@ class SaleController extends Controller
     public function show($id)
     {
         $sale = Sale::with(['customer', 'items.product'])->findOrFail($id);
-        return view('sales.show', compact('sale'));
+        return view('sales.view', compact('sale'));
     }
 
     // Show edit sale form

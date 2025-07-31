@@ -67,6 +67,10 @@
 
         <button type="button" id="addRowBtn" class="btn btn-primary mb-4">+ Add Product</button>
 
+        <div class="mb-3">
+            <strong>Total Items:</strong> <span id="item-count">1</span>
+        </div>
+
         <div class="row">
             <div class="col-md-4">
                 <div class="card p-3 bg-transparent border-0">
@@ -134,6 +138,12 @@
 @endsection
 @push('scripts')
 <script>
+
+    function updateItemCount() {
+        const rowCount = document.querySelectorAll('#saleItemsTable tbody tr').length;
+        document.getElementById('item-count').textContent = rowCount;
+    }
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // 1. Update selling price and total on product change
@@ -149,6 +159,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             calculateTotals();
             updateProductDropdowns();
+            updateItemCount();
+
         }
     });
 
@@ -181,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             newRow.querySelector('.product-select').dispatchEvent(new Event('change'));
             updateProductDropdowns();
+            updateItemCount();
         }, 100);
     });
 
@@ -204,11 +217,19 @@ document.addEventListener('DOMContentLoaded', function () {
         let paidInput = document.getElementById('paid_amount');
         let paidRaw = paidInput.value.trim();
 
-        // If paid_amount is empty or zero, default it to grandTotal
+        // If Paid Amount is empty or zero, auto-fill it with Grand Total
         if (paidRaw === '' || parseFloat(paidRaw) === 0) {
             paidInput.value = grandTotal.toFixed(2);
         }
+
+        // Now, parse paid amount (user can change it)
         let paid = parseFloat(paidInput.value) || 0;
+
+        // Optionally restrict Paid Amount to max Grand Total:
+        if (paid > grandTotal) {
+            paid = grandTotal;
+            paidInput.value = grandTotal.toFixed(2);
+        }
 
         let due = grandTotal - paid;
         document.getElementById('due_amount').value = due.toFixed(2);
@@ -248,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 row.remove();
                 calculateTotals();
                 updateProductDropdowns();
+                updateItemCount();
             } else {
                 alert("At least one product row is required.");
             }
@@ -261,6 +283,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         updateProductDropdowns();
     }, 200);
+
+    // Auto-fill Paid Amount with Grand Total on page load if Paid Amount is empty or zero
+    setTimeout(() => {
+        let paidInput = document.getElementById('paid_amount');
+        let grandTotalInput = document.getElementById('grand_total');
+
+        if (paidInput.value.trim() === '' || parseFloat(paidInput.value) === 0) {
+            paidInput.value = grandTotalInput.value;
+        }
+
+        calculateTotals();  // recalculate due after setting paid amount
+    }, 300);
 
 });
 </script>
