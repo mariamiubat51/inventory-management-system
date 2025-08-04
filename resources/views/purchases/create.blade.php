@@ -35,7 +35,8 @@
                 <select name="account_id" id="account_id" class="form-control" required>
                     <option value="">-- Select Account --</option>
                     @foreach($accounts as $account)
-                        <option value="{{ $account->id }}" data-balance="{{ $account->total_balance }}" {{ old('account_id') == $account->id ? 'selected' : '' }}>
+                        <option value="{{ $account->id }}" data-balance="{{ $account->total_balance }}"
+                            {{ old('account_id', 'Cash') == $account->account_name ? 'selected' : '' }}>
                             {{ $account->account_name }}
                         </option>
                     @endforeach

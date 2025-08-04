@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Account;
 use App\Models\TransactionLog;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 
 class SaleController extends Controller
@@ -19,7 +20,7 @@ class SaleController extends Controller
     // Show all sales
     public function index()
     {
-        $sales = Sale::with('customer')->latest()->paginate(10);
+        $sales = Sale::with('customer')->withCount('items')->latest()->paginate(15);
         $accounts = Account::all(); 
 
         return view('sales.index', compact('sales', 'accounts'));
@@ -38,7 +39,7 @@ class SaleController extends Controller
     {
         $request->validate([
             'sale_date' => 'required|date',
-            'customer_id' => 'nullable|exists:users,id',
+            'customer_id' => 'nullable',
             'product_id.*' => 'required|exists:products,id',
             'quantity.*' => 'required|integer|min:1',
             'selling_price.*' => 'required|numeric|min:0',
@@ -47,6 +48,29 @@ class SaleController extends Controller
             'payment_method' => 'required|string',
             'account_id' => 'required|exists:accounts,id',
         ]);
+
+        if ($request->customer_id === 'walkin') {
+            // Check if email already exists
+            $existing = User::where('email', $request->walkin_email)->first();
+            if ($existing) {
+                throw ValidationException::withMessages(['walkin_email' => 'This email is already registered.']);
+            }
+
+            $customer = User::create([
+                'name' => $request->walkin_name,
+                'email' => $request->walkin_email,
+                'phone' => $request->walkin_phone,
+                'address' => $request->walkin_address,
+                'password' => bcrypt('12345678'), // default password
+                'role' => 'customer',
+                'type' => 'Walk-in',
+            ]);
+
+            $customerId = $customer->id;
+        } else {
+            $customerId = $request->customer_id;
+        }
+
 
         DB::beginTransaction();
 
@@ -66,7 +90,7 @@ class SaleController extends Controller
             $sale = Sale::create([
                 'invoice_no' => $invoiceNo,
                 'sale_date' => $request->sale_date,
-                'customer_id' => $request->customer_id,
+                'customer_id' => $customerId,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'grand_total' => $grandTotal,
@@ -75,6 +99,31 @@ class SaleController extends Controller
                 'payment_method' => $request->payment_method,
                 'note' => $request->note,
             ]);
+
+            foreach ($request->product_id as $i => $productId) {
+                $qty = $request->quantity[$i];
+                $price = $request->selling_price[$i];
+                $total = $qty * $price;
+
+                $product = Product::findOrFail($productId);
+
+                if ($product->stock_quantity < $qty) {
+                    throw new \Exception("Not enough stock for product: {$product->name}");
+                }
+
+                // Reduce product stock here:
+                $product->stock_quantity -= $qty;
+                $product->save();
+
+                // Create sale item:
+                SaleItem::create([
+                    'sale_id' => $sale->id,
+                    'product_id' => $productId,
+                    'quantity' => $qty,
+                    'selling_price' => $price,
+                    'total' => $total,
+                ]);
+            }
 
             // After the foreach loop ends — CORRECT PLACE
             if ($request->paid_amount > 0 && $request->has('account_id')) {

@@ -21,14 +21,40 @@
 
             <div class="col-md-6">
                 <label for="customer_id" class="form-label">Customer</label>
-                <select name="customer_id" id="customer_id" class="form-select">
-                    <option value="">-- Walk-in (No Customer) --</option>
+                <select name="customer_id" id="customer_id" class="form-select" required>
+                    <option value="" disabled selected>-- Select Customer --</option>
+                    <option value="walkin" {{ old('customer_id') == 'walkin' ? 'selected' : '' }}>-- Walk-in Customer --</option>
                     @foreach ($customers as $customer)
                         <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
                             {{ $customer->name }} ({{ $customer->type ?? 'Regular' }})
                         </option>
                     @endforeach
                 </select>
+
+                <div id="walkInForm" class="border rounded p-3 mt-3" style="display: none;">
+                    <h5>Walk-in Customer Info</h5>
+                    <div class="mb-2">
+                        <label>Name</label>
+                        <input type="text" name="walkin_name" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label>Email</label>
+                        <input type="email" name="walkin_email" class="form-control">
+                            @error('walkin_email')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                    </div>
+                    <div class="mb-2">
+                        <label>Phone</label>
+                        <input type="text" name="walkin_phone" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <label>Address</label>
+                        <input type="text" name="walkin_address" class="form-control">
+                    </div>
+                </div>
+
+
             </div>
         </div>
 
@@ -58,7 +84,7 @@
                         </select>
                     </td>
                     <td><input type="number" name="quantity[]" class="form-control quantity" min="1" value="1" required></td>
-                    <td><input type="number" name="selling_price[]" class="form-control selling-price" step="0.01" min="0" readonly></td>
+                    <td><input type="number" name="selling_price[]" class="form-control selling-price" step="0.01" min="0"></td>
                     <td><input type="number" name="total[]" class="form-control total" step="0.01" readonly></td>
                     <td><button type="button" class="btn btn-danger btn-sm remove-row">X</button></td>
                 </tr>
@@ -80,7 +106,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="discount">Discount</label>
-                        <input type="number" id="discount" name="discount" class="form-control" step="0.01" min="0" value="{{ old('discount', 0) }}">
+                        <div class="input-group">
+                            <input type="number" id="discount" name="discount" class="form-control" step="0.01" min="0" value="{{ old('discount', 0) }}">
+                            <select id="discount_type" class="form-select" style="max-width: 130px;">
+                                <option value="fixed" selected>৳ Fixed</option>
+                                <option value="percent">% Percent</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label>Grand Total</label>
@@ -115,10 +147,17 @@
                 <div class="card p-3 h-100 bg-transparent border-0">
                     <div class="mb-3">
                         <label for="account_id" class="form-label">Account</label>
+                        @php
+                            $defaultCashAccountId = \App\Models\Account::where('account_type', 'cash')->value('id');
+                        @endphp
+
                         <select name="account_id" id="account_id" class="form-select" required>
                             <option value="">-- Select Account --</option>
                             @foreach (\App\Models\Account::all() as $account)
-                                <option value="{{ $account->id }}">{{ $account->account_name }} (Balance: {{ number_format($account->total_balance, 2) }})</option>
+                                <option value="{{ $account->id }}"
+                                    {{ old('account_id', $defaultCashAccountId) == $account->id ? 'selected' : '' }}>
+                                    {{ $account->account_name }} (Balance: {{ number_format($account->total_balance, 2) }})
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -139,12 +178,24 @@
 @push('scripts')
 <script>
 
+    // Show/hide walk-in customer form
+    document.getElementById('customer_id').addEventListener('change', function () {
+        const walkInForm = document.getElementById('walkInForm');
+        if (this.value === 'walkin') {
+            walkInForm.style.display = 'block';
+        } else {
+            walkInForm.style.display = 'none';
+        }
+    });
+
     function updateItemCount() {
         const rowCount = document.querySelectorAll('#saleItemsTable tbody tr').length;
         document.getElementById('item-count').textContent = rowCount;
     }
 
 document.addEventListener('DOMContentLoaded', function () {
+
+    let userChangedPaidAmount = false;
 
     // 1. Update selling price and total on product change
     document.querySelector('#saleItemsTable').addEventListener('change', function (e) {
@@ -199,7 +250,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 4. Discount or Paid Amount changes
     document.getElementById('discount').addEventListener('input', calculateTotals);
-    document.getElementById('paid_amount').addEventListener('input', calculateTotals);
+    document.getElementById('discount_type').addEventListener('change', calculateTotals);
+
+    document.getElementById('paid_amount').addEventListener('input', function () {
+        userChangedPaidAmount = true;
+        calculateTotals();
+    });
+
 
     // 5. Totals Calculation
     function calculateTotals() {
@@ -211,14 +268,23 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('subtotal').value = subtotal.toFixed(2);
 
         let discount = parseFloat(document.getElementById('discount').value) || 0;
-        let grandTotal = subtotal - discount;
+        let discountType = document.getElementById('discount_type').value;
+        let discountAmount = 0;
+
+        if (discountType === 'percent') {
+            discountAmount = (subtotal * discount) / 100;
+        } else {
+            discountAmount = discount;
+        }
+
+        let grandTotal = subtotal - discountAmount;
+
         document.getElementById('grand_total').value = grandTotal.toFixed(2);
 
         let paidInput = document.getElementById('paid_amount');
         let paidRaw = paidInput.value.trim();
 
-        // If Paid Amount is empty or zero, auto-fill it with Grand Total
-        if (paidRaw === '' || parseFloat(paidRaw) === 0) {
+        if (!userChangedPaidAmount) {
             paidInput.value = grandTotal.toFixed(2);
         }
 
@@ -233,6 +299,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let due = grandTotal - paid;
         document.getElementById('due_amount').value = due.toFixed(2);
+
+        if (grandTotal === 0) {
+            userChangedPaidAmount = false;
+        }
+
     }
 
     // 6. Update dropdowns to disable selected products
@@ -296,6 +367,18 @@ document.addEventListener('DOMContentLoaded', function () {
         calculateTotals();  // recalculate due after setting paid amount
     }, 300);
 
+    // 2b. Update total when selling price is changed
+    document.querySelector('#saleItemsTable').addEventListener('input', function (e) {
+        if (e.target.classList.contains('selling-price')) {
+            let row = e.target.closest('tr');
+            let qty = parseFloat(row.querySelector('.quantity').value);
+            let price = parseFloat(e.target.value);
+            row.querySelector('.total').value = (qty * price).toFixed(2);
+            calculateTotals();
+        }
+    });
+
 });
+
 </script>
 @endpush

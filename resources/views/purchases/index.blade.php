@@ -4,7 +4,7 @@
 <div class="container">
     <h2 class="mb-4">Purchase List</h2>
 
-    <a href="{{ route('purchases.create') }}" class="btn btn-success mb-3" style="background-color: rgba(95, 58, 58, 1);">
+    <a href="{{ route('purchases.create') }}" class="btn text-white mb-3" style="background-color: rgba(95, 58, 58, 1);">
         ➕ Add Purchase
     </a>
 
@@ -44,21 +44,21 @@
                     @endif
                 </td>
                 <td>
-                    <a href="{{ route('purchases.show', $purchase->id) }}" class="btn btn-sm btn-info mt-1">👁 View</a>
-                    <a href="{{ route('purchases.edit', $purchase->id) }}" class="btn btn-sm btn-warning mt-1">✏️ Edit</a>
+                    <a href="{{ route('purchases.show', $purchase->id) }}" class="btn btn-sm btn-info mt-1"><i class="fas fa-eye"></i> View</a>
+                    <a href="{{ route('purchases.edit', $purchase->id) }}" class="btn btn-sm btn-warning mt-1"><i class="fas fa-edit"></i> Edit</a>
                     
                     @if($purchase->due_amount > 0)
                         <!-- Pay Due Button -->
                         <button class="btn btn-sm btn-secondary mt-1" data-bs-toggle="modal"
                             data-bs-target="#payDueModal{{ $purchase->id }}">
-                            💰 Pay Due
+                            <i class="fas fa-money-check-alt"></i> Pay Due
                         </button>
                     @endif
                     
                     <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase?')">
                         @csrf
                         @method('DELETE')
-                        <button class="btn btn-sm btn-danger mt-1">🗑️ Delete</button>
+                        <button class="btn btn-sm btn-danger mt-1"><i class="fas fa-trash"></i> Delete</button>
                     </form>
                 </td>
             </tr>
