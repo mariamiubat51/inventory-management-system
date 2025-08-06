@@ -12,7 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
-
+use App\Http\Controllers\POSController;
 
 
 
@@ -50,6 +50,8 @@ Route::resource('expenses', ExpenseController::class);
 Route::resource('expense-categories', ExpenseCategoryController::class);
 
 
+Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
+Route::post('/pos/sale', [POSController::class, 'store'])->name('pos.store');
 
 Route::get('/', function () {
     return view('welcome');

@@ -31,7 +31,7 @@
                     @endforeach
                 </select>
 
-                <div id="walkInForm" class="border rounded p-3 mt-3" style="display: none;">
+                <div id="walkInForm" class="border rounded p-3 mt-3 shadow" style="display: none;">
                     <h5>Walk-in Customer Info</h5>
                     <div class="mb-2">
                         <label>Name</label>

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+ <div class="container">
     <h2 class="mb-4">Sales List</h2>
 
     @if(session('success'))
@@ -121,5 +121,5 @@
     <div class="d-flex justify-content-center">
         {{ $sales->links() }}
     </div>
-</div>
+ </div>
 @endsection
