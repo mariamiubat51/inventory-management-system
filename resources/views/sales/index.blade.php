@@ -8,7 +8,7 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <a href="{{ route('sales.create') }}" class="btn text-white mb-3" style="background-color: rgba(95, 58, 58, 1);">
+    <a href="{{ route('sales.create') }}" class="btn text-white mb-3" style="background-color: rgba(51, 106, 202, 1);">
         ➕ Create New Sale
     </a>
 

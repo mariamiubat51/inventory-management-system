@@ -4,7 +4,7 @@
 <div class="container">
     <h2 class="mb-4">Purchase List</h2>
 
-    <a href="{{ route('purchases.create') }}" class="btn text-white mb-3" style="background-color: rgba(95, 58, 58, 1);">
+    <a href="{{ route('purchases.create') }}" class="btn text-white mb-3" style="background-color: rgba(51, 106, 202, 1);">
         ➕ Add Purchase
     </a>
 

@@ -56,7 +56,7 @@
         <a href="{{ url('/expense-categories') }}" class="d-block my-1"><i class="fas fa-tags me-1"></i> Expense Categories</a>
     </div>
 
-    <a href="#"><i class="fas fa-cash-register me-2"></i>POS</a>
+    <a href="{{ url('/pos') }}"><i class="fas fa-cash-register me-2"></i>POS</a>
     <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
     <a href="{{ url('/accounts') }}"><i class="fa-solid fa-building-columns me-2"></i>Accounts</a>
     <a href="{{ url('/transaction_logs') }}"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>

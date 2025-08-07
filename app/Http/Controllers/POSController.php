@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Str;
@@ -16,8 +17,9 @@ class POSController extends Controller
     {
         $products = Product::all();
         $customers = User::where('role', 'customer')->get();
+        $accounts = Account::all();
 
-        return view('pos.index', compact('products', 'customers'));
+        return view('pos.index', compact('products', 'customers', 'accounts'));
     }
 
     public function store(Request $request)

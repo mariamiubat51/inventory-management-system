@@ -42,7 +42,7 @@
                     @endforeach
                 </select>
 
-                <small class="form-text text-muted mt-1" id="account_balance_text">
+                <small class="form-text text-muted mt-1 text-success" id="account_balance_text">
                     Available Balance: 0.00
                 </small>
 
