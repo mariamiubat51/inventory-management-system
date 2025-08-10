@@ -30,31 +30,6 @@
                         </option>
                     @endforeach
                 </select>
-
-                <div id="walkInForm" class="border rounded p-3 mt-3 shadow" style="display: none;">
-                    <h5>Walk-in Customer Info</h5>
-                    <div class="mb-2">
-                        <label>Name</label>
-                        <input type="text" name="walkin_name" class="form-control">
-                    </div>
-                    <div class="mb-2">
-                        <label>Email</label>
-                        <input type="email" name="walkin_email" class="form-control">
-                            @error('walkin_email')
-                                <div class="text-danger">{{ $message }}</div>
-                            @enderror
-                    </div>
-                    <div class="mb-2">
-                        <label>Phone</label>
-                        <input type="text" name="walkin_phone" class="form-control">
-                    </div>
-                    <div class="mb-2">
-                        <label>Address</label>
-                        <input type="text" name="walkin_address" class="form-control">
-                    </div>
-                </div>
-
-
             </div>
         </div>
 
@@ -169,31 +144,79 @@
             </div>
         </div>
 
+        <!-- Hidden inputs to hold Walk-in customer data from modal -->
+        <input type="hidden" name="walkin_name" id="walkin_name_hidden">
+        <input type="hidden" name="walkin_email" id="walkin_email_hidden">
+        <input type="hidden" name="walkin_phone" id="walkin_phone_hidden">
+        <input type="hidden" name="walkin_address" id="walkin_address_hidden">
+
         <div class="text-end mt-4">
             <button type="submit" class="btn btn-success">💾 Save Sale</button>
         </div>
     </form>
 </div>
+
+<!-- Walk-in Customer Modal -->
+<div class="modal fade" id="walkInModal" tabindex="-1" aria-labelledby="walkInModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="walkInModalLabel">Walk-in Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="walkin_name_modal" class="form-label">Name</label>
+          <input type="text" id="walkin_name_modal" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="walkin_email_modal" class="form-label">Email</label>
+          <input type="email" id="walkin_email_modal" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="walkin_phone_modal" class="form-label">Phone</label>
+          <input type="text" id="walkin_phone_modal" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label for="walkin_address_modal" class="form-label">Address</label>
+          <input type="text" id="walkin_address_modal" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="saveWalkinBtn" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
+
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Show/hide walk-in customer form
-    document.getElementById('customer_id').addEventListener('change', function () {
-        const walkInForm = document.getElementById('walkInForm');
+    // Bootstrap modal instance for Walk-in Customer
+    const walkInModalEl = document.getElementById('walkInModal');
+    const walkInModal = new bootstrap.Modal(walkInModalEl);
+
+    const customerSelect = document.getElementById('customer_id');
+
+    // Show modal when Walk-in selected
+    customerSelect.addEventListener('change', function () {
         if (this.value === 'walkin') {
-            walkInForm.style.display = 'block';
-        } else {
-            walkInForm.style.display = 'none';
+            walkInModal.show();
         }
     });
 
-    function updateItemCount() {
-        const rowCount = document.querySelectorAll('#saleItemsTable tbody tr').length;
-        document.getElementById('item-count').textContent = rowCount;
-    }
-
-document.addEventListener('DOMContentLoaded', function () {
+    // Save Walk-in info from modal inputs to hidden inputs
+    document.getElementById('saveWalkinBtn').addEventListener('click', function () {
+        document.getElementById('walkin_name_hidden').value = document.getElementById('walkin_name_modal').value.trim();
+        document.getElementById('walkin_email_hidden').value = document.getElementById('walkin_email_modal').value.trim();
+        document.getElementById('walkin_phone_hidden').value = document.getElementById('walkin_phone_modal').value.trim();
+        document.getElementById('walkin_address_hidden').value = document.getElementById('walkin_address_modal').value.trim();
+        walkInModal.hide();
+    });
 
     let userChangedPaidAmount = false;
 
@@ -211,7 +234,6 @@ document.addEventListener('DOMContentLoaded', function () {
             calculateTotals();
             updateProductDropdowns();
             updateItemCount();
-
         }
     });
 
@@ -221,6 +243,17 @@ document.addEventListener('DOMContentLoaded', function () {
             let row = e.target.closest('tr');
             let qty = parseFloat(e.target.value);
             let price = parseFloat(row.querySelector('.selling-price').value);
+            row.querySelector('.total').value = (qty * price).toFixed(2);
+            calculateTotals();
+        }
+    });
+
+    // 2b. Update total when selling price is changed
+    document.querySelector('#saleItemsTable').addEventListener('input', function (e) {
+        if (e.target.classList.contains('selling-price')) {
+            let row = e.target.closest('tr');
+            let qty = parseFloat(row.querySelector('.quantity').value);
+            let price = parseFloat(e.target.value);
             row.querySelector('.total').value = (qty * price).toFixed(2);
             calculateTotals();
         }
@@ -240,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         tbody.appendChild(newRow);
 
-        // Important: Trigger change so it calculates correctly
+        // Trigger change so it calculates correctly
         setTimeout(() => {
             newRow.querySelector('.product-select').dispatchEvent(new Event('change'));
             updateProductDropdowns();
@@ -256,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function () {
         userChangedPaidAmount = true;
         calculateTotals();
     });
-
 
     // 5. Totals Calculation
     function calculateTotals() {
@@ -282,16 +314,13 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('grand_total').value = grandTotal.toFixed(2);
 
         let paidInput = document.getElementById('paid_amount');
-        let paidRaw = paidInput.value.trim();
 
         if (!userChangedPaidAmount) {
             paidInput.value = grandTotal.toFixed(2);
         }
 
-        // Now, parse paid amount (user can change it)
         let paid = parseFloat(paidInput.value) || 0;
 
-        // Optionally restrict Paid Amount to max Grand Total:
         if (paid > grandTotal) {
             paid = grandTotal;
             paidInput.value = grandTotal.toFixed(2);
@@ -303,21 +332,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (grandTotal === 0) {
             userChangedPaidAmount = false;
         }
-
     }
 
     // 6. Update dropdowns to disable selected products
     function updateProductDropdowns() {
         const allSelects = document.querySelectorAll('.product-select');
-
-        // Get all selected product IDs
         const selectedValues = Array.from(allSelects)
             .map(select => select.value)
             .filter(val => val !== '');
 
         allSelects.forEach(select => {
             const currentValue = select.value;
-
             Array.from(select.options).forEach(option => {
                 if (option.value === "") {
                     option.disabled = false;
@@ -364,21 +389,14 @@ document.addEventListener('DOMContentLoaded', function () {
             paidInput.value = grandTotalInput.value;
         }
 
-        calculateTotals();  // recalculate due after setting paid amount
+        calculateTotals();
     }, 300);
 
-    // 2b. Update total when selling price is changed
-    document.querySelector('#saleItemsTable').addEventListener('input', function (e) {
-        if (e.target.classList.contains('selling-price')) {
-            let row = e.target.closest('tr');
-            let qty = parseFloat(row.querySelector('.quantity').value);
-            let price = parseFloat(e.target.value);
-            row.querySelector('.total').value = (qty * price).toFixed(2);
-            calculateTotals();
-        }
-    });
-
+    // Update item count
+    function updateItemCount() {
+        const rowCount = document.querySelectorAll('#saleItemsTable tbody tr').length;
+        document.getElementById('item-count').textContent = rowCount;
+    }
 });
-
 </script>
 @endpush
