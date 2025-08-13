@@ -76,6 +76,10 @@
   <div class="content">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <input type="text" class="form-control w-50" placeholder="Search...">
+       <form method="POST" action="{{ route('logout') }}" class="text-end">
+            @csrf
+            <button type="submit">Logout</button>
+        </form>
       <div>
         <i class="fas fa-user-circle fa-2x text-secondary me-2"></i>
         <i class="fas fa-bell fa-2x text-secondary"></i>

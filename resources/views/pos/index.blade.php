@@ -4,40 +4,88 @@
 <div class="container">
     <h2>Point of Sale (POS)</h2>
 
-    <!-- Customer Selection -->
     <div class="mb-3">
         <label for="customer" class="form-label">Select Customer</label>
-        <select id="customer" class="form-control">
-            <option value="">Walk-in</option>
+        <select id="customer" name="customer_id" class="form-control">
+            <option value="">-- Select Customer --</option>
+            <option value="walkin">Walk-in Customer</option>
             @foreach($customers as $customer)
                 <option value="{{ $customer->id }}">{{ $customer->name }}</option>
             @endforeach
         </select>
     </div>
 
-    <!-- POS Layout: Left (Products), Right (Cart) -->
+    <input type="hidden" id="walkin_name_hidden">
+    <input type="hidden" id="walkin_email_hidden">
+    <input type="hidden" id="walkin_phone_hidden">
+    <input type="hidden" id="walkin_address_hidden">
+
+    <div class="modal fade" id="walkInModal" tabindex="-1" aria-labelledby="walkInModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="walkInModalLabel">Walk-in Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                <label for="walkin_name_modal" class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" id="walkin_name_modal" class="form-control">
+                </div>
+                <div class="mb-3">
+                <label for="walkin_email_modal" class="form-label">Email</label>
+                <input type="email" id="walkin_email_modal" class="form-control">
+                </div>
+                <div class="mb-3">
+                <label for="walkin_phone_modal" class="form-label">Phone</label>
+                <input type="text" id="walkin_phone_modal" class="form-control">
+                </div>
+                <div class="mb-3">
+                <label for="walkin_address_modal" class="form-label">Address</label>
+                <input type="text" id="walkin_address_modal" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveWalkinBtn" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <!-- Left: Product Grid -->
         <div class="col-md-8">
-            <!-- Search Bar -->
             <div class="mb-3">
                 <input type="text" id="product-search" class="form-control" placeholder="Search product...">
             </div>
 
-            <!-- Product Grid -->
             <div class="row" id="product-grid">
                 @foreach($products as $product)
                     <div class="col-md-3 mb-4 product-card" data-name="{{ strtolower($product->name) }}">
                         <div class="card h-100">
                             <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" style="height:150px; object-fit:cover;">
-                            <div class="card-body">
+                            <div class="card-body d-flex flex-column">
                                 <h5 class="card-title lh-1">{{ $product->name }}</h5>
                                 <p class="lh-1">Price: {{ number_format($product->selling_price, 2) }}৳</p>
-                                <p class="lh-1">Stock: {{ $product->stock_quantity }}</p>
-                                <button class="btn btn-sm btn-primary add-to-cart"
+
+                                @php
+                                    $stock_class = 'text-success'; // Default is green
+                                    if ($product->stock_quantity <= 0) {
+                                        $stock_class = 'text-danger'; // Red for zero stock
+                                    } elseif ($product->stock_quantity <= 5) {
+                                        $stock_class = 'text-warning'; // Orange for low stock
+                                    }
+                                @endphp
+                                <p class="lh-1 fw-bold {{ $stock_class }}">
+                                    Stock: {{ $product->stock_quantity }}
+                                </p>
+
+                                <button class="btn btn-sm btn-primary add-to-cart mt-auto"
                                         data-id="{{ $product->id }}"
                                         data-name="{{ $product->name }}"
-                                        data-price="{{ $product->selling_price }}">
+                                        data-price="{{ $product->selling_price }}"
+                                        data-stock="{{ $product->stock_quantity }}" {{-- <-- Important: Added stock data --}}
+                                        {{ $product->stock_quantity <= 0 ? 'disabled' : '' }}> {{-- <-- Disables button --}}
                                     + Add
                                 </button>
                             </div>
@@ -47,7 +95,6 @@
             </div>
         </div>
 
-        <!-- Right: Cart -->
         <div class="col-md-4">
             <div class="border p-3 rounded bg-light shadow">
                 <h4 class="mb-3">Cart</h4>
@@ -63,65 +110,97 @@
                     </thead>
                     <tbody></tbody>
                 </table>
-       
-                <div class="d-flex justify-content-end mb-2">
-                    <div class="d-flex align-items-center px-3 py-2" style="background-color: #f8f9fa;">
-                        <label for="discount" class="mb-0 me-3">Discount:</label>
-                        <input type="number" id="discount" value="0" class="form-control rounded-0 rounded-start" style="width: 120px;" min="0">
-                        <select id="discount-type" class="form-select rounded-0 rounded-end" style="width: 120px;">
-                            <option value="fixed">৳ Fixed</option>
-                            <option value="percent">% Percentage</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="d-flex flex-column align-items-end mb-3">
-                    <!-- Paid Amount -->
-                    <div class="me-4 d-flex align-items-center" style="min-width: 200px;">
-                        <label for="paid" class="mb-0 me-2 p-3" style="white-space: nowrap;">Paid Amount:</label>
-                        <input type="number" id="paid" class="form-control" min="0" value="0" style="width: 120px;">
-                    </div>
-
-                    <!-- Due Amount -->
-                    <div class="me-4 d-flex align-items-center" style="min-width: 200px;">
-                        <label for="due" class="mb-0 me-2 p-3" style="white-space: nowrap;">Due Amount:</label>
-                        <input type="number" id="due" class="form-control" readonly style="width: 120px;">
-                    </div>
-
-                    <!-- Payment Account -->
-                    <div class="d-flex align-items-center ps-3" style="min-width: 250px;">
-                        <label for="account_id" class="mb-0 me-2 px-3" style="white-space: nowrap;">Payment Account:</label>
-                        <select name="account_id" id="account_id" class="form-select" style="width: 150px;">
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" {{ $account->account_name == 'Cash' ? 'selected' : '' }}>
-                            {{ $account->account_name }}
-                            </option>
-                        @endforeach
-                        </select>
-                    </div>
-                    <small id="account_balance_info" class="text-success mt-2"></small>
-                </div>
-
+        
                 <div class="d-flex justify-content-end mb-2">
                     <strong>Total: <span id="cart-total">0.00</span>৳</strong>
                 </div>
-
-                <div class="d-flex justify-content-end mb-2">
+                <div class="mb-3">
+                    <label for="discount_value" class="form-label">Discount</label>
+                    <div class="input-group">
+                        <input type="number" id="discount_value" class="form-control" value="0" min="0">
+                        <select id="discount_type" class="form-select" style="max-width: 120px;">
+                            <option value="fixed" selected>৳ Fixed</option>
+                            <option value="percent">% Percent</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end mb-3">
                     <strong>Grand Total: <span id="grand-total">0.00</span>৳</strong>
                 </div>
 
-                <div class="text-end">
-                    <button class="btn btn-success" id="complete-sale">Complete Sale</button>
+                <hr>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <label for="paid_amount" class="form-label">Paid Amount</label>
+                        <input type="number" id="paid_amount" class="form-control" min="0" value="0">
+                    </div>
+                     <div class="col-6">
+                        <label for="due_amount" class="form-label">Due Amount</label>
+                        <input type="number" id="due_amount" class="form-control" readonly>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="payment_method" class="form-label">Payment Method</label>
+                    <select id="payment_method" class="form-select">
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Mobile Banking">Mobile Banking</option>
+                    </select>
+                </div>
+                
+                <div class="mt-3">
+                    <label for="account_id" class="form-label">Payment Account</label>
+                    <select id="account_id" class="form-select">
+                        @foreach($accounts as $account)
+                            <option value="{{ $account->id }}" {{ strtolower($account->account_name) == 'cash' ? 'selected' : '' }}>
+                                {{ $account->account_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="text-end mt-4">
+                    <button type="button" class="btn btn-success w-100" id="complete-sale">Complete Sale</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+
 <script>
-    let cart = [];
+document.addEventListener('DOMContentLoaded', function () {
+    // ---- MODAL & CUSTOMER SELECTION LOGIC ----
+    const walkInModalEl = document.getElementById('walkInModal');
+    const walkInModal = new bootstrap.Modal(walkInModalEl);
+    const customerSelect = document.getElementById('customer');
+
+    customerSelect.addEventListener('change', function () {
+        if (this.value === 'walkin') {
+            walkInModal.show();
+        }
+    });
+
+    document.getElementById('saveWalkinBtn').addEventListener('click', function () {
+        const name = document.getElementById('walkin_name_modal').value.trim();
+        if (!name) {
+            alert('Please enter the walk-in customer name.');
+            return;
+        }
+        document.getElementById('walkin_name_hidden').value = name;
+        document.getElementById('walkin_email_hidden').value = document.getElementById('walkin_email_modal').value.trim();
+        document.getElementById('walkin_phone_hidden').value = document.getElementById('walkin_phone_modal').value.trim();
+        document.getElementById('walkin_address_hidden').value = document.getElementById('walkin_address_modal').value.trim();
+        walkInModal.hide();
+    });
+
+    // ---- CART & PRODUCT LOGIC ----
+    let cart = []; // This array holds the state of the cart
     let userEditedPaid = false;
 
+    // Filter products based on search input
     document.getElementById('product-search').addEventListener('input', function () {
         const query = this.value.toLowerCase();
         document.querySelectorAll('.product-card').forEach(card => {
@@ -129,175 +208,187 @@
         });
     });
 
-    // Render cart table completely (on add/remove)
+    // This function redraws the cart table based on the `cart` array
     function renderCart() {
-        let tbody = document.querySelector('#cart-table tbody');
-        tbody.innerHTML = '';
+        const tbody = document.querySelector('#cart-table tbody');
+        let cartHtml = '';
         cart.forEach((item, index) => {
             const price = parseFloat(item.price) || 0;
-            const qty = parseFloat(item.qty) || 0;
+            const qty = parseInt(item.qty) || 0;
             const subtotal = price * qty;
-
-            tbody.innerHTML += `
+            cartHtml += `
                 <tr>
                     <td>${item.name}</td>
-                    <td><input type="number" class="form-control qty" data-index="${index}" value="${item.qty}" min="1"></td>
-                    <td><input type="number" class="form-control price" data-index="${index}" value="${item.price}" min="0" step="0.01"></td>
-                    <td>${subtotal.toFixed(2)}৳</td>
-                    <td><button class="btn btn-danger btn-sm remove" data-index="${index}">X</button></td>
+                    <td><input type="number" class="form-control form-control-sm qty" data-index="${index}" value="${qty}" min="1"></td>
+                    <td><input type="number" class="form-control form-control-sm price" data-index="${index}" value="${price.toFixed(2)}" min="0" step="0.01"></td>
+                    <td>${subtotal.toFixed(2)}</td>
+                    <td><button class="btn btn-danger btn-sm remove-item" data-id="${item.id}">X</button></td>
                 </tr>
             `;
         });
+        tbody.innerHTML = cartHtml;
         updateTotals();
     }
-
-    // Update total and grand total live
+    
+    // This function recalculates all the totals
+    // handle both discount types
     function updateTotals() {
-        let total = 0;
-        cart.forEach(item => {
-            let price = parseFloat(item.price) || 0;
-            let qty = parseFloat(item.qty) || 0;
-            total += price * qty;
-        });
+        let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-        let discountValue = parseFloat(document.getElementById('discount').value) || 0;
-        let discountType = document.getElementById('discount-type').value;
-
+        // Get values from the new discount inputs
+        const discountValue = parseFloat(document.getElementById('discount_value').value) || 0;
+        const discountType = document.getElementById('discount_type').value;
+        
         let discountAmount = 0;
+        // Calculate the actual discount amount
         if (discountType === 'percent') {
-            discountAmount = (discountValue / 100) * total;
+            discountAmount = (subtotal * discountValue) / 100;
         } else {
             discountAmount = discountValue;
         }
 
-        let grandTotal = Math.max(0, total - discountAmount);
-        document.getElementById('cart-total').innerText = total.toFixed(2);
-        document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
+        let grandTotal = subtotal - discountAmount;
 
-        // Auto-fill paid unless user already typed
-        const paidField = document.getElementById('paid');
+        document.getElementById('cart-total').innerText = subtotal.toFixed(2);
+        document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
+        
+        const paidField = document.getElementById('paid_amount');
         if (!userEditedPaid) {
             paidField.value = grandTotal.toFixed(2);
         }
-
-        // Update due based on (possibly updated) paid
         updateDue();
     }
 
+    // This function updates the due amount
     function updateDue() {
         const grandTotal = parseFloat(document.getElementById('grand-total').innerText) || 0;
-        const paid = parseFloat(document.getElementById('paid').value) || 0;
-        let due = grandTotal - paid;
-        due = due < 0 ? 0 : due;
-        document.getElementById('due').value = due.toFixed(2);
+        const paid = parseFloat(document.getElementById('paid_amount').value) || 0;
+        document.getElementById('due_amount').value = (grandTotal - paid).toFixed(2);
     }
+    
+    // Add item, remove item, or update qty/price
+    document.addEventListener('click', function(e) {
+        // FIX: HANDLES ADDING A PRODUCT AND CHECKS STOCK
+        if (e.target.classList.contains('add-to-cart')) {
+            const id = e.target.dataset.id;
+            const stock = parseInt(e.target.dataset.stock); // Get stock quantity
+            const existingItem = cart.find(item => item.id === id);
 
-    document.getElementById('paid').addEventListener('input', function () {
+            if (existingItem) {
+                // Check if adding one more exceeds stock
+                if (existingItem.qty < stock) {
+                    existingItem.qty++;
+                } else {
+                    alert('No more items in stock!');
+                }
+            } else {
+                // Only add if stock is available
+                if (stock > 0) {
+                    cart.push({
+                        id: id,
+                        name: e.target.dataset.name,
+                        price: parseFloat(e.target.dataset.price),
+                        stock: stock, // <-- Store stock in the cart object
+                        qty: 1
+                    });
+                }
+            }
+            renderCart();
+        }
+
+        // HANDLES REMOVING AN ITEM FROM THE CART
+        if (e.target.classList.contains('remove-item')) {
+            const idToRemove = e.target.dataset.id;
+            cart = cart.filter(item => item.id !== idToRemove);
+            renderCart();
+        }
+    });
+
+    // FIX: HANDLES UPDATING QTY/PRICE AND VALIDATES STOCK
+    document.querySelector('#cart-table').addEventListener('input', function(e) {
+        const target = e.target;
+        if (!target.classList.contains('qty') && !target.classList.contains('price')) {
+            return;
+        }
+        
+        const index = target.dataset.index;
+        const row = target.closest('tr');
+
+        if (index === undefined || !row) { return; }
+
+        const itemInCart = cart[index];
+
+        // Handle Quantity changes with stock validation
+        if (target.classList.contains('qty')) {
+            let newQty = parseInt(target.value) || 1;
+            
+            if (newQty > itemInCart.stock) {
+                alert('Cannot add more. Only ' + itemInCart.stock + ' items left in stock.');
+                newQty = itemInCart.stock; // Reset to max available
+                target.value = newQty; // Update the input box visually
+            }
+            itemInCart.qty = newQty;
+        }
+
+        // Handle Price changes
+        if (target.classList.contains('price')) {
+            itemInCart.price = parseFloat(target.value) || 0;
+        }
+
+        const subtotalCell = row.querySelector('td:nth-child(4)');
+        const newSubtotal = itemInCart.qty * itemInCart.price;
+        subtotalCell.textContent = newSubtotal.toFixed(2);
+
+        updateTotals();
+    });
+    
+    // Listen for changes on discount and paid amount fields
+    document.getElementById('paid_amount').addEventListener('input', function() {
         userEditedPaid = true;
         updateDue();
     });
 
+    document.getElementById('discount_value').addEventListener('input', updateTotals);
+    document.getElementById('discount_type').addEventListener('change', updateTotals);
 
-    // Add product button click
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('add-to-cart')) {
-            const id = e.target.dataset.id;
-            const name = e.target.dataset.name;
-            const price = parseFloat(e.target.dataset.price);
-
-            let existing = cart.find(item => item.id == id);
-            if (existing) {
-                existing.qty++;
-            } else {
-                cart.push({ id, name, price, qty: 1 });
-            }
-            renderCart();
-        }
-
-        if (e.target.classList.contains('remove')) {
-            const index = e.target.dataset.index;
-            cart.splice(index, 1);
-            renderCart();
-        }
-    });
-
-    // Quantity input changes
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('qty')) {
-            const index = e.target.dataset.index;
-            const newQty = parseInt(e.target.value);
-
-            if (newQty > 0) {
-                cart[index].qty = newQty;
-
-                const row = document.querySelector(`#cart-table tbody tr:nth-child(${parseInt(index) + 1})`);
-                const price = cart[index].price;
-                const subtotal = newQty * price;
-                row.querySelector('td:nth-child(4)').textContent = subtotal.toFixed(2) + '৳';
-
-                updateTotals();
-            }
-        }
-    });
-
-    // Price input changes
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('price')) {
-            const index = e.target.dataset.index;
-            const value = e.target.value;
-
-            if (value === '') {
-                const row = document.querySelector(`#cart-table tbody tr:nth-child(${parseInt(index) + 1})`);
-                row.querySelector('td:nth-child(4)').textContent = '0.00৳';
-                cart[index].price = 0;
-                updateTotals();
-                return;
-            }
-
-            const newPrice = parseFloat(value);
-            if (!isNaN(newPrice) && newPrice >= 0) {
-                cart[index].price = newPrice;
-
-                const row = document.querySelector(`#cart-table tbody tr:nth-child(${parseInt(index) + 1})`);
-                const qty = cart[index].qty;
-                const subtotal = qty * newPrice;
-                row.querySelector('td:nth-child(4)').textContent = subtotal.toFixed(2) + '৳';
-
-                updateTotals();
-            }
-        }
-    });
-
-    // Discount input changes
-    document.getElementById('discount').addEventListener('input', updateTotals);
-    document.getElementById('discount-type').addEventListener('change', updateTotals);
-
-    document.getElementById('complete-sale').addEventListener('click', function () {
+    // ---- COMPLETE SALE LOGIC ----
+    const completeBtn = document.getElementById('complete-sale');
+    completeBtn.addEventListener('click', function () {
         if (cart.length === 0) {
-            alert('Cart is empty. Please add some products.');
+            alert('Cart is empty.');
             return;
         }
-
-        const customerId = document.getElementById('customer').value || null;
-        const discount = parseFloat(document.getElementById('discount').value) || 0;
-        const discountType = document.getElementById('discount-type').value;
-        const grandTotal = parseFloat(document.getElementById('grand-total').innerText) || 0;
-        const paid = parseFloat(document.getElementById('paid').value) || 0;
-        const due = parseFloat(document.getElementById('due').value) || 0;
-        const accountId = document.getElementById('account_id').value;
-
-        // Prepare data to send to server
+        const customerId = document.getElementById('customer').value;
+        if (!customerId) {
+            alert('Please select a customer.');
+            return;
+        }
+        
         const saleData = {
             customer_id: customerId,
-            discount: discount,
-            discount_type: discountType,
-            grand_total: grandTotal,
-            paid_amount: paid,
-            due_amount: due,
-            account_id: accountId,
-            items: cart
+            items: cart,
+            // FIX: Send discount value and type separately
+            discount_value: parseFloat(document.getElementById('discount_value').value) || 0,
+            discount_type: document.getElementById('discount_type').value,
+            paid_amount: parseFloat(document.getElementById('paid_amount').value) || 0,
+            payment_method: document.getElementById('payment_method').value,
 
+            account_id: document.getElementById('account_id').value,
         };
+
+        if (customerId === 'walkin') {
+            saleData.walkin_name = document.getElementById('walkin_name_hidden').value;
+            saleData.walkin_email = document.getElementById('walkin_email_hidden').value;
+            saleData.walkin_phone = document.getElementById('walkin_phone_hidden').value;
+            saleData.walkin_address = document.getElementById('walkin_address_hidden').value;
+            if (!saleData.walkin_name) {
+                alert('Walk-in customer name is required.');
+                return;
+            }
+        }
+
+        completeBtn.disabled = true;
+        completeBtn.innerText = 'Processing...';
 
         fetch('{{ route('pos.store') }}', {
             method: 'POST',
@@ -307,40 +398,31 @@
             },
             body: JSON.stringify(saleData)
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                cart = [];
-                renderCart();
-                document.getElementById('discount').value = 0;
-                document.getElementById('customer').value = ''; // reset customer select
-            } else {
-                alert('Sale failed: ' + (data.message || 'Unknown error'));
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
             }
+            return response.json();
+        })
+        .then(data => {
+            alert(data.message);
+            window.location.reload();
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Sale failed. Check console for details.');
+            let errorMessage = "An unknown error occurred.";
+            if (error.message) {
+                errorMessage = error.message;
+            } else if (error.errors) {
+                errorMessage = Object.values(error.errors).flat().join('\n');
+            }
+            alert('Sale Failed:\n' + errorMessage);
+        })
+        .finally(() => {
+            completeBtn.disabled = false;
+            completeBtn.innerText = 'Complete Sale';
         });
     });
-
-    // show available balance of account
-    const accountBalances = @json($accounts->pluck('total_balance', 'id'));
-
-    const accountSelect = document.getElementById('account_id');
-    const balanceInfoDiv = document.getElementById('account_balance_info');
-
-    function updateAccountBalanceText() {
-        const selectedId = accountSelect.value;
-        const balance = accountBalances[selectedId] ?? 0;
-
-        balanceInfoDiv.innerText = `Balance: ৳${parseFloat(balance).toFixed(2)}`;
-    }
-
-    accountSelect.addEventListener('change', updateAccountBalanceText);
-
-    // Show balance immediately on page load (default selected)
-    updateAccountBalanceText();
+});
 </script>
 @endsection

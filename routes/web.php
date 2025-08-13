@@ -9,6 +9,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\TransactionLogController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
@@ -39,6 +40,9 @@ Route::resource('transaction_logs', TransactionLogController::class)->only(['ind
 
 
 Route::resource('users', UserController::class);
+
+
+Route::resource('customers', CustomerController::class);
 
 
 Route::resource('sales', SaleController::class);
