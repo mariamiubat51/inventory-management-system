@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,14 @@ class SaleController extends Controller
                 'address' => $request->walkin_address,
                 'password' => bcrypt('12345678'), // default password
                 'role' => 'customer',
+                'type' => 'Walk-in',
+            ]);
+
+            Customer::create([
+                'name' => $request->walkin_name,
+                'email' => $request->walkin_email,
+                'phone' => $request->walkin_phone,
+                'address' => $request->walkin_address,
                 'type' => 'Walk-in',
             ]);
 

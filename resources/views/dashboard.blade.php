@@ -50,7 +50,7 @@
     <a href="{{ route('dashboard') }}"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
     <a href="{{ route('products.index') }}"><i class="fas fa-boxes me-2"></i>Products</a>
     <a href="#"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
-    <a href="#"><i class="fas fa-user me-2"></i>Customers</a>
+    <a href="{{ url('/customers') }}"><i class="fas fa-user me-2"></i>Customers</a>
     <a href="{{ route('suppliers.index') }}"><i class="fas fa-users me-2"></i>Suppliers</a>
     <a href="{{ url('/purchases') }}"><i class="fas fa-shopping-cart me-2"></i>Purchases</a>
     <a href="{{ url('/sales') }}"><i class="fas fa-cash-register me-2"></i>Sales</a>

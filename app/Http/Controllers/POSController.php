@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Customer;
 use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -60,6 +61,15 @@ class POSController extends Controller
                 'phone' => $request->walkin_phone, 'address' => $request->walkin_address,
                 'password' => bcrypt(Str::random(10)), 'role' => 'customer', 'type' => 'Walk-in',
             ]);
+
+            Customer::create([
+                'name' => $request->walkin_name,
+                'email' => $request->walkin_email,
+                'phone' => $request->walkin_phone,
+                'address' => $request->walkin_address,
+                'type' => 'Walk-in',
+            ]);
+
             $customerId = $customer->id;
         } else {
             $customerId = $request->customer_id;

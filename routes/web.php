@@ -14,6 +14,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\POSController;
+use App\Http\Controllers\StockMovementController;
 
 
 
@@ -56,6 +57,14 @@ Route::resource('expense-categories', ExpenseCategoryController::class);
 
 Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
 Route::post('/pos/sale', [POSController::class, 'store'])->name('pos.store');
+
+
+Route::middleware(['auth'])->group(function(){
+    Route::get('/stock-movements', [StockMovementController::class, 'index'])->name('stock_movements.index');
+    Route::get('/stock-movements/create', [StockMovementController::class, 'create'])->name('stock_movements.create');
+    Route::post('/stock-movements', [StockMovementController::class, 'store'])->name('stock_movements.store');
+});
+
 
 Route::get('/', function () {
     return view('welcome');
