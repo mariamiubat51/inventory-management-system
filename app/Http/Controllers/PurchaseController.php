@@ -6,6 +6,7 @@ use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\PurchaseItem;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -128,6 +129,16 @@ class PurchaseController extends Controller
                 $product->stock_quantity += $quantity;
                 $product->buying_price = $buyingPrice;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'in', // stock coming in
+                    'quantity' => $quantity,
+                    'balance' => $product->stock_quantity, // current stock after addition
+                    'user_id' => auth()->id(),
+                    'reference' => 'Purchase #' . $purchase->invoice_no,
+                    'remarks' => 'Stock added from purchase',
+                ]);
             }
 
             DB::commit();
@@ -181,6 +192,16 @@ class PurchaseController extends Controller
                 $product = Product::find($item->product_id);
                 $product->stock_quantity -= $item->quantity;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'out', // reverting stock
+                    'quantity' => $item->quantity,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Purchase Update #' . $purchase->invoice_no,
+                    'remarks' => 'Stock reverted during purchase update',
+                ]);
             }
 
             $totalAmount = 0;
@@ -259,6 +280,16 @@ class PurchaseController extends Controller
                 $product->stock_quantity += $quantity;
                 $product->buying_price = $buyingPrice;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'in', // stock coming in
+                    'quantity' => $quantity,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Purchase Update #' . $purchase->invoice_no,
+                    'remarks' => 'Stock updated after purchase update',
+                ]);
             }
 
             DB::commit();

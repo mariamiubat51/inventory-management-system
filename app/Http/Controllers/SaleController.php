@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\Account;
 use App\Models\TransactionLog;
+use App\Models\StockMovement;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -120,9 +121,20 @@ class SaleController extends Controller
                     throw new \Exception("Not enough stock for product: {$product->name}");
                 }
 
-                // Reduce product stock here:
+                // Reduce product stock
                 $product->stock_quantity -= $qty;
                 $product->save();
+
+                // Create Stock Movement
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'out',
+                    'quantity' => $qty,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Sale #' . $sale->invoice_no,
+                    'remarks' => 'Sold to customer ' . ($sale->customer ? $sale->customer->name : 'Walk-in'),
+                ]);
 
                 // Create sale item:
                 SaleItem::create([
@@ -206,6 +218,16 @@ class SaleController extends Controller
                 $product = Product::findOrFail($item->product_id);
                 $product->stock_quantity += $item->quantity;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'in', // restoring stock
+                    'quantity' => $item->quantity,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Sale Update #' . $sale->invoice_no,
+                    'remarks' => 'Restored stock before updating sale',
+                ]);
             }
 
             // Delete old items
@@ -247,6 +269,16 @@ class SaleController extends Controller
 
                 $product->stock_quantity -= $qty;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'out',
+                    'quantity' => $qty,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Sale Update #' . $sale->invoice_no,
+                    'remarks' => 'Updated sale for customer ' . ($sale->customer ? $sale->customer->name : 'Walk-in'),
+                ]);
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
@@ -307,6 +339,16 @@ class SaleController extends Controller
                 $product = Product::findOrFail($item->product_id);
                 $product->stock_quantity += $item->quantity;
                 $product->save();
+
+                StockMovement::create([
+                    'product_id' => $product->id,
+                    'movement_type' => 'in',
+                    'quantity' => $item->quantity,
+                    'balance' => $product->stock_quantity,
+                    'user_id' => auth()->id(),
+                    'reference' => 'Deleted Sale #' . $sale->invoice_no,
+                    'remarks' => 'Restored stock after sale deletion',
+                ]);
             }
 
             $sale->items()->delete();

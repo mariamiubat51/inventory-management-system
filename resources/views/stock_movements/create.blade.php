@@ -12,13 +12,13 @@
             <select name="product_id" id="product_id" class="form-control" required>
                 <option value="">-- Select Product --</option>
                 @foreach($products as $p)
-                    <option value="{{ $p->id }}">{{ $p->name }} (Current: {{ $p->stock }})</option>
+                    <option value="{{ $p->id }}">{{ $p->id }} - {{ $p->name }} (Current: {{ $p->stock }})</option>
                 @endforeach
             </select>
         </div>
 
         <div class="mb-3">
-            <label for="movement_type" class="form-label">Type</label>
+            <label for="movement_type" class="form-label">Movement Type</label>
             <select name="movement_type" id="movement_type" class="form-control" required>
                 <option value="in">Stock In</option>
                 <option value="out">Stock Out</option>
@@ -27,7 +27,7 @@
 
         <div class="mb-3">
             <label for="quantity" class="form-label">Quantity</label>
-            <input type="number" name="quantity" id="quantity" class="form-control" min="1" required>
+            <input type="number" name="quantity" id="quantity" class="form-control" min="1" max="{{ $p->stock }}" required>
         </div>
 
         <div class="mb-3">

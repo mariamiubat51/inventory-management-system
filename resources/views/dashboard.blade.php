@@ -49,7 +49,7 @@
     <h4 class="text-center py-3">StoreSync</h4>
     <a href="{{ route('dashboard') }}"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
     <a href="{{ route('products.index') }}"><i class="fas fa-boxes me-2"></i>Products</a>
-    <a href="#"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
+    <a href="{{ url('/stock-movements') }}"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
     <a href="{{ url('/customers') }}"><i class="fas fa-user me-2"></i>Customers</a>
     <a href="{{ route('suppliers.index') }}"><i class="fas fa-users me-2"></i>Suppliers</a>
     <a href="{{ url('/purchases') }}"><i class="fas fa-shopping-cart me-2"></i>Purchases</a>
@@ -78,7 +78,7 @@
       <input type="text" class="form-control w-50" placeholder="Search...">
        <form method="POST" action="{{ route('logout') }}" class="text-end">
             @csrf
-            <button type="submit">Logout</button>
+            <button class="btn" type="submit">Logout</button>
         </form>
       <div>
         <i class="fas fa-user-circle fa-2x text-secondary me-2"></i>

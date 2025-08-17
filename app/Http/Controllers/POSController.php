@@ -10,6 +10,7 @@ use App\Models\Account;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\TransactionLog;
+use App\Models\StockMovement;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException; // <-- Add this
@@ -111,6 +112,18 @@ class POSController extends Controller
                 throw new \Exception("Insufficient stock for product: {$product->name}.");
             }
             $product->decrement('stock_quantity', $item['qty']); // Use atomic update
+
+            $currentStock = $product->stock_quantity; // New stock after decrement
+
+            StockMovement::create([
+                'product_id' => $product->id,
+                'movement_type' => 'out', // because stock is sold
+                'quantity' => $item['qty'],
+                'balance' => $currentStock,
+                'user_id' => auth()->id(),
+                'reference' => 'Sale Invoice: ' . $sale->invoice_no,
+                'remarks' => 'Stock reduced after POS sale',
+            ]);
 
             SaleItem::create([
                 'sale_id' => $sale->id, 'product_id' => $item['id'],

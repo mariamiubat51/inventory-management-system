@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -47,7 +48,18 @@ class ProductController extends Controller
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
-        Product::create($data);
+        $product = Product::create($data);
+
+        // Add Stock Movement
+        StockMovement::create([
+            'product_id' => $product->id,
+            'movement_type' => 'in', // stock coming in
+            'quantity' => $product->stock_quantity,
+            'balance' => $product->stock_quantity,
+            'user_id' => auth()->id(),
+            'reference' => 'Product Creation',
+            'remarks' => 'Product created with initial stock',
+        ]);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
@@ -82,6 +94,22 @@ class ProductController extends Controller
         }
 
         $product->update($data);
+
+        if ($product->wasChanged('stock_quantity')) {
+            $oldQty = $product->getOriginal('stock_quantity');
+            $newQty = $product->stock_quantity;
+            $difference = $newQty - $oldQty;
+
+            StockMovement::create([
+                'product_id' => $product->id,
+                'movement_type' => $difference > 0 ? 'in' : 'out',
+                'quantity' => abs($difference),
+                'balance' => $newQty,
+                'user_id' => auth()->id(),
+                'reference' => 'Stock Adjustment',
+                'remarks' => "Stock changed from {$oldQty} to {$newQty}",
+            ]);
+        }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully.');
     }
