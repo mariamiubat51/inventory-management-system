@@ -119,7 +119,7 @@
 
     <!-- Pagination -->
     <div class="d-flex justify-content-center">
-        {{ $sales->links() }}
+        {{ $sales->links('pagination::simple-bootstrap-5') }}
     </div>
  </div>
 @endsection

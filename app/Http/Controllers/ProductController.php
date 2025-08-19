@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
 
 class ProductController extends Controller
 {
@@ -43,25 +45,29 @@ class ProductController extends Controller
 
         $data['product_code'] = $productCode;
 
-        // Image Upload
+        //  Auto-generate unique barcode
+        $data['barcode'] = 'BC-' . strtoupper(uniqid());
+
+        //  Handle Image Upload
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
+        //  Save Product
         $product = Product::create($data);
 
-        // Add Stock Movement
+        //  Add Stock Movement
         StockMovement::create([
             'product_id' => $product->id,
             'movement_type' => 'in', // stock coming in
             'quantity' => $product->stock_quantity,
             'balance' => $product->stock_quantity,
-            'user_id' => auth()->id(),
+            'user_id' => auth()->id() ?? 1,
             'reference' => 'Product Creation',
             'remarks' => 'Product created with initial stock',
         ]);
 
-        return redirect()->route('products.index')->with('success', 'Product created successfully.');
+        return redirect()->route('products.index')->with('success', 'Product created with barcode successfully.');
     }
 
     public function edit(Product $product)
@@ -74,7 +80,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required',
             'description' => 'nullable|string',
-            'buying_price' => 'required|numeric|min:0',         
+            'buying_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -83,13 +89,19 @@ class ProductController extends Controller
         $data = $request->only([
             'name',
             'description',
-            'buying_price',                                    
+            'buying_price',
             'selling_price',
             'stock_quantity',
         ]);
 
         // Image Upload
         if ($request->hasFile('image')) {
+
+            
+            // Delete the old image
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
@@ -105,7 +117,7 @@ class ProductController extends Controller
                 'movement_type' => $difference > 0 ? 'in' : 'out',
                 'quantity' => abs($difference),
                 'balance' => $newQty,
-                'user_id' => auth()->id(),
+                'user_id' => auth()->id() ?? 1,
                 'reference' => 'Stock Adjustment',
                 'remarks' => "Stock changed from {$oldQty} to {$newQty}",
             ]);
@@ -116,7 +128,12 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->delete();
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+    // Delete the image first
+    if ($product->image) {
+        Storage::disk('public')->delete($product->image);
+    }
+
+    $product->delete();
+    return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 }

@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@php
+    $barcode = new \Milon\Barcode\DNS1D();
+@endphp
+
 @section('content')
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -22,6 +26,7 @@
         <th>Code</th>
         <th>Image</th>
         <th>Name</th>
+        <th>Barcode</th>
         <th>Description</th>
         <th>Buying Price (৳)</th>
         <th>Selling Price (৳)</th>
@@ -45,6 +50,17 @@
         </td>
 
         <td>{{ $product->name }}</td>
+
+        {{-- Fixed barcode display --}}
+        <td>
+    @if($product->barcode)
+        {!! $barcode->getBarcodeHTML($product->barcode, 'C128') !!}
+        <small>{{ $product->barcode }}</small>
+    @else
+        <span>No barcode</span>
+    @endif
+</td>
+
         <td>{{ $product->description }}</td>
         <td>{{ $product->buying_price }}</td>
         <td>{{ $product->selling_price }}</td>
@@ -62,7 +78,7 @@
       </tr>
       @empty
       <tr>
-        <td colspan="9" class="text-center">No products found.</td>
+        <td colspan="10" class="text-center">No products found.</td>
       </tr>
       @endforelse
     </tbody>

@@ -22,7 +22,7 @@ class SaleController extends Controller
     // Show all sales
     public function index()
     {
-        $sales = Sale::with('customer')->withCount('items')->latest()->paginate(15);
+        $sales = Sale::with('customer')->withCount('items')->latest()->simplePaginate(15);
         $accounts = Account::all(); 
 
         return view('sales.index', compact('sales', 'accounts'));
