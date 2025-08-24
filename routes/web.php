@@ -15,50 +15,53 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\ReportController;
 
 
-
+// Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
 
-    
+// Products
 Route::resource('products', ProductController::class);
 
-
+// Suppliers
 Route::resource('suppliers', SupplierController::class);
 
-
+// Accounts
 Route::resource('accounts', AccountController::class);
 Route::get('/accounts/{id}/ledger', [AccountController::class, 'ledger'])->name('accounts.ledger');
 
-
+// Purchases
 Route::resource('purchases', PurchaseController::class);
 Route::post('/purchases/{id}/pay-due', [PurchaseController::class, 'payDue'])->name('purchases.payDue');
 
-
+// Transaction Logs
 Route::resource('transaction_logs', TransactionLogController::class)->only(['index', 'create', 'store']);
 
-
+// Users
 Route::resource('users', UserController::class);
 
-
+// Customers
 Route::resource('customers', CustomerController::class);
 
-
+// Sales
 Route::resource('sales', SaleController::class);
 Route::post('/sales/{sale}/pay-due', [SaleController::class, 'payDue'])->name('sales.payDue');
 
-
+// Expenses
 Route::resource('expenses', ExpenseController::class);
 
+// Expense Categories
 Route::resource('expense-categories', ExpenseCategoryController::class);
 
-
+// POS
 Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
 Route::post('/pos/sale', [POSController::class, 'store'])->name('pos.store');
+Route::get('/pos/get-product/{barcode}', [POSController::class, 'getProductByBarcode']);
 
-
+// stock-movements
 Route::middleware(['auth'])->group(function(){
     Route::get('/stock-movements', [StockMovementController::class, 'index'])->name('stock_movements.index');
     Route::get('/stock-movements/create', [StockMovementController::class, 'create'])->name('stock_movements.create');
@@ -66,18 +69,21 @@ Route::middleware(['auth'])->group(function(){
 });
 
 
+// Reports
+Route::get('/reports/profit', [ReportController::class, 'profit'])->name('reports.profit');
+Route::get('/reports/lowstock', [ReportController::class, 'lowstock'])->name('reports.lowstock');
+Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+Route::get('/reports/purchases', [ReportController::class, 'purchases'])->name('reports.purchases');
+Route::get('/reports/stock', [ReportController::class, 'stock'])->name('reports.stock');
+Route::get('/reports/expenses', [ReportController::class, 'expenses'])->name('reports.expenses');
+
+
+// Welcome Page
 Route::get('/', function () {
     return view('welcome');
 });
 
-/*Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware('auth')
-    ->name('dashboard');*/
-
+// Profile
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

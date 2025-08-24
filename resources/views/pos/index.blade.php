@@ -59,11 +59,24 @@
                 <input type="text" id="product-search" class="form-control" placeholder="Search product...">
             </div>
 
+            <div class="mb-3">
+                <label for="barcode" class="form-label">Scan Barcode</label>
+                <input type="text" id="barcode" class="form-control" placeholder="Scan barcode here..." autofocus>
+            </div>
+
             <div class="row" id="product-grid">
                 @foreach($products as $product)
                     <div class="col-md-3 mb-4 product-card" data-name="{{ strtolower($product->name) }}">
                         <div class="card h-100">
-                            <img src="{{ asset('storage/' . $product->image) }}" class="card-img-top" style="height:150px; object-fit:cover;">
+                            <img 
+                                src="{{ ($product->image && file_exists(storage_path('app/public/' . $product->image))) 
+                                        ? asset('storage/' . $product->image) 
+                                        : asset('products/storesyncLogo.png') }}" 
+                                class="card-img-top" 
+                                style="height:150px; object-fit:cover;" 
+                                alt="Product Image"
+                            />
+
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title lh-1">{{ $product->name }}</h5>
                                 <p class="lh-1">Price: {{ number_format($product->selling_price, 2) }}৳</p>
@@ -169,6 +182,9 @@
     </div>
 </div>
 
+<!-- Toast container -->
+<div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1050"></div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -176,6 +192,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const walkInModalEl = document.getElementById('walkInModal');
     const walkInModal = new bootstrap.Modal(walkInModalEl);
     const customerSelect = document.getElementById('customer');
+
+    const barcodeInput = document.getElementById('barcode');
+    barcodeInput.focus(); // Focus at page load
+
+    barcodeInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const barcode = e.target.value.trim();
+            if (barcode !== '') {
+                fetch(`/pos/get-product/${barcode}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) addProductToCart(data.product);
+                        else alert('Product not found!');
+                    })
+                    .catch(err => console.error(err));
+            }
+            e.target.value = '';
+            setTimeout(() => barcodeInput.focus(), 50); // Refocus for next scan
+        }
+    });
 
     customerSelect.addEventListener('change', function () {
         if (this.value === 'walkin') {
@@ -197,18 +233,44 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ---- CART & PRODUCT LOGIC ----
-    let cart = []; // This array holds the state of the cart
+    let cart = []; // Cart array
     let userEditedPaid = false;
 
     // Filter products based on search input
     document.getElementById('product-search').addEventListener('input', function () {
         const query = this.value.toLowerCase();
         document.querySelectorAll('.product-card').forEach(card => {
-            card.style.display = card.dataset.name.includes(query) ? '' : 'none';
+            card.style.display = card.dataset.name.toLowerCase().includes(query) ? '' : 'none';
         });
     });
 
-    // This function redraws the cart table based on the `cart` array
+    // ---- STEP 2: Add Product to Cart Function ----
+    function addProductToCart(product) {
+        const existing = cart.find(item => item.id == product.id);
+        if (existing) {
+            if (existing.qty < product.stock_quantity) {
+                existing.qty++;
+            } else {
+                alert('No more items in stock!');
+            }
+        } else {
+            if (product.stock_quantity > 0) {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: parseFloat(product.selling_price),
+                    stock: product.stock_quantity,
+                    qty: 1,
+                    barcode: product.barcode
+                });
+            }
+        }
+        renderCart();
+
+        showToast(`${product.name} added to cart!`, 'info');
+    }
+
+    // Render cart table
     function renderCart() {
         const tbody = document.querySelector('#cart-table tbody');
         let cartHtml = '';
@@ -229,18 +291,15 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody.innerHTML = cartHtml;
         updateTotals();
     }
-    
-    // This function recalculates all the totals
-    // handle both discount types
+
+    // Update totals and discounts
     function updateTotals() {
         let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-        // Get values from the new discount inputs
         const discountValue = parseFloat(document.getElementById('discount_value').value) || 0;
         const discountType = document.getElementById('discount_type').value;
-        
         let discountAmount = 0;
-        // Calculate the actual discount amount
+
         if (discountType === 'percent') {
             discountAmount = (subtotal * discountValue) / 100;
         } else {
@@ -248,10 +307,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         let grandTotal = subtotal - discountAmount;
-
         document.getElementById('cart-total').innerText = subtotal.toFixed(2);
         document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
-        
+
         const paidField = document.getElementById('paid_amount');
         if (!userEditedPaid) {
             paidField.value = grandTotal.toFixed(2);
@@ -259,44 +317,25 @@ document.addEventListener('DOMContentLoaded', function () {
         updateDue();
     }
 
-    // This function updates the due amount
+    // Update due amount
     function updateDue() {
         const grandTotal = parseFloat(document.getElementById('grand-total').innerText) || 0;
         const paid = parseFloat(document.getElementById('paid_amount').value) || 0;
         document.getElementById('due_amount').value = (grandTotal - paid).toFixed(2);
     }
-    
-    // Add item, remove item, or update qty/price
+
+    // ---- HANDLE CART EVENTS ----
     document.addEventListener('click', function(e) {
-        // FIX: HANDLES ADDING A PRODUCT AND CHECKS STOCK
+        // Add product from card
         if (e.target.classList.contains('add-to-cart')) {
             const id = e.target.dataset.id;
-            const stock = parseInt(e.target.dataset.stock); // Get stock quantity
-            const existingItem = cart.find(item => item.id === id);
-
-            if (existingItem) {
-                // Check if adding one more exceeds stock
-                if (existingItem.qty < stock) {
-                    existingItem.qty++;
-                } else {
-                    alert('No more items in stock!');
-                }
-            } else {
-                // Only add if stock is available
-                if (stock > 0) {
-                    cart.push({
-                        id: id,
-                        name: e.target.dataset.name,
-                        price: parseFloat(e.target.dataset.price),
-                        stock: stock, // <-- Store stock in the cart object
-                        qty: 1
-                    });
-                }
-            }
-            renderCart();
+            const stock = parseInt(e.target.dataset.stock);
+            const name = e.target.dataset.name;
+            const price = parseFloat(e.target.dataset.price);
+            addProductToCart({ id, name, selling_price: price, stock_quantity: stock, barcode: e.target.dataset.barcode });
         }
 
-        // HANDLES REMOVING AN ITEM FROM THE CART
+        // Remove item
         if (e.target.classList.contains('remove-item')) {
             const idToRemove = e.target.dataset.id;
             cart = cart.filter(item => item.id !== idToRemove);
@@ -304,75 +343,51 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // FIX: HANDLES UPDATING QTY/PRICE AND VALIDATES STOCK
+    // Update qty and price in cart table
     document.querySelector('#cart-table').addEventListener('input', function(e) {
         const target = e.target;
-        if (!target.classList.contains('qty') && !target.classList.contains('price')) {
-            return;
-        }
-        
+        if (!target.classList.contains('qty') && !target.classList.contains('price')) return;
         const index = target.dataset.index;
-        const row = target.closest('tr');
+        const item = cart[index];
+        if (!item) return;
 
-        if (index === undefined || !row) { return; }
-
-        const itemInCart = cart[index];
-
-        // Handle Quantity changes with stock validation
         if (target.classList.contains('qty')) {
             let newQty = parseInt(target.value) || 1;
-            
-            if (newQty > itemInCart.stock) {
-                alert('Cannot add more. Only ' + itemInCart.stock + ' items left in stock.');
-                newQty = itemInCart.stock; // Reset to max available
-                target.value = newQty; // Update the input box visually
+            if (newQty > item.stock) {
+                alert('Cannot add more. Only ' + item.stock + ' items left in stock.');
+                newQty = item.stock;
+                target.value = newQty;
             }
-            itemInCart.qty = newQty;
+            item.qty = newQty;
         }
 
-        // Handle Price changes
         if (target.classList.contains('price')) {
-            itemInCart.price = parseFloat(target.value) || 0;
+            item.price = parseFloat(target.value) || 0;
         }
 
-        const subtotalCell = row.querySelector('td:nth-child(4)');
-        const newSubtotal = itemInCart.qty * itemInCart.price;
-        subtotalCell.textContent = newSubtotal.toFixed(2);
-
+        const row = target.closest('tr');
+        row.querySelector('td:nth-child(4)').textContent = (item.qty * item.price).toFixed(2);
         updateTotals();
     });
-    
-    // Listen for changes on discount and paid amount fields
-    document.getElementById('paid_amount').addEventListener('input', function() {
-        userEditedPaid = true;
-        updateDue();
-    });
 
+    // Discount and paid inputs
+    document.getElementById('paid_amount').addEventListener('input', function() { userEditedPaid = true; updateDue(); });
     document.getElementById('discount_value').addEventListener('input', updateTotals);
     document.getElementById('discount_type').addEventListener('change', updateTotals);
 
-    // ---- COMPLETE SALE LOGIC ----
-    const completeBtn = document.getElementById('complete-sale');
-    completeBtn.addEventListener('click', function () {
-        if (cart.length === 0) {
-            alert('Cart is empty.');
-            return;
-        }
+    // ---- COMPLETE SALE ----
+    document.getElementById('complete-sale').addEventListener('click', function () {
+        if (cart.length === 0) { alert('Cart is empty.'); return; }
         const customerId = document.getElementById('customer').value;
-        if (!customerId) {
-            alert('Please select a customer.');
-            return;
-        }
-        
+        if (!customerId) { alert('Please select a customer.'); return; }
+
         const saleData = {
             customer_id: customerId,
             items: cart,
-            // FIX: Send discount value and type separately
             discount_value: parseFloat(document.getElementById('discount_value').value) || 0,
             discount_type: document.getElementById('discount_type').value,
             paid_amount: parseFloat(document.getElementById('paid_amount').value) || 0,
             payment_method: document.getElementById('payment_method').value,
-
             account_id: document.getElementById('account_id').value,
         };
 
@@ -381,48 +396,79 @@ document.addEventListener('DOMContentLoaded', function () {
             saleData.walkin_email = document.getElementById('walkin_email_hidden').value;
             saleData.walkin_phone = document.getElementById('walkin_phone_hidden').value;
             saleData.walkin_address = document.getElementById('walkin_address_hidden').value;
-            if (!saleData.walkin_name) {
-                alert('Walk-in customer name is required.');
-                return;
-            }
+            if (!saleData.walkin_name) { alert('Walk-in customer name is required.'); return; }
         }
 
+        const completeBtn = this;
         completeBtn.disabled = true;
         completeBtn.innerText = 'Processing...';
 
         fetch('{{ route('pos.store') }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
             body: JSON.stringify(saleData)
         })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
-            return response.json();
-        })
-        .then(data => {
-            alert(data.message);
-            window.location.reload();
-        })
+        .then(response => { if (!response.ok) { return response.json().then(err => { throw err; }); } return response.json(); })
+        .then(data => { alert(data.message); window.location.reload(); })
         .catch(error => {
             console.error('Error:', error);
             let errorMessage = "An unknown error occurred.";
-            if (error.message) {
-                errorMessage = error.message;
-            } else if (error.errors) {
-                errorMessage = Object.values(error.errors).flat().join('\n');
-            }
+            if (error.message) { errorMessage = error.message; }
+            else if (error.errors) { errorMessage = Object.values(error.errors).flat().join('\n'); }
             alert('Sale Failed:\n' + errorMessage);
         })
-        .finally(() => {
-            completeBtn.disabled = false;
-            completeBtn.innerText = 'Complete Sale';
-        });
+        .finally(() => { completeBtn.disabled = false; completeBtn.innerText = 'Complete Sale'; });
+    });
+
+    // ---- BARCODE SCANNING ----
+    document.getElementById('barcode').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            const barcode = e.target.value.trim();
+            if (barcode !== '') {
+                fetch(`/pos/get-product/${barcode}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            addProductToCart(data.product); // Step 2 applied
+                        } else { alert('Product not found!'); }
+                    })
+                    .catch(err => console.error(err));
+            }
+            e.target.value = '';
+        }
     });
 });
+
+function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toast-container');
+
+    // Create toast element
+    const toastEl = document.createElement('div');
+    toastEl.className = `toast align-items-center text-bg-${type} border-0 show`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'assertive');
+    toastEl.setAttribute('aria-atomic', 'true');
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    // Append toast to container
+    toastContainer.appendChild(toastEl);
+
+    // Initialize Bootstrap toast
+    const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+    toast.show();
+
+    // Remove toast from DOM after hiding
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
+
 </script>
+
 @endsection

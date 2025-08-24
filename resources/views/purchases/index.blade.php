@@ -124,7 +124,7 @@
 
     {{-- Pagination links --}}
     <div class="d-flex justify-content-center">
-        {{ $purchases->links() }}
+        {{ $purchases->links('pagination::simple-bootstrap-5') }}
     </div>
 </div>
 @endsection

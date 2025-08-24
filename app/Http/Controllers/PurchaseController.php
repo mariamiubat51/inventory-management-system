@@ -18,7 +18,7 @@ class PurchaseController extends Controller
 {
     public function index()
     {
-        $purchases = Purchase::with('supplier')->withCount('items')->latest()->paginate(15);
+        $purchases = Purchase::with('supplier')->withCount('items')->latest()->simplePaginate(15);
         $accounts = Account::all(); // required for due payment dropdown
 
         return view('purchases.index', compact('purchases', 'accounts'));

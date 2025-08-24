@@ -38,7 +38,11 @@
 </head>
 <body>
 <div class="sidebar d-flex flex-column">
-    <h4 class="text-center py-3">StoreSync</h4>
+    <h4 class="text-center pt-3">
+      <img src="{{ asset('storage/storesyncLogo.png') }}" alt="StoreSync" style="height:50px;">
+       StoreSync
+    </h4>
+
     <a href="{{ route('dashboard') }}"><i class="fas fa-chart-line me-2"></i>Dashboard</a>
     <a href="{{ route('products.index') }}"><i class="fas fa-boxes me-2"></i>Products</a>
     <a href="{{ url('/stock-movements') }}"><i class="fas fa-exchange-alt me-2"></i>Stock Movements</a>
@@ -57,13 +61,25 @@
     </div>
 
     <a href="{{ url('/pos') }}"><i class="fas fa-cash-register me-2"></i>POS</a>
-    <a href="#"><i class="fas fa-chart-bar me-2"></i>Reports</a>
+    
+    {{-- Reports dropdown --}}
+    <a data-bs-toggle="collapse" href="#reportsMenu" role="button" aria-expanded="false" aria-controls="reportsMenu">
+        <i class="fas fa-chart-bar me-2"></i>Reports <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse ps-4" id="reportsMenu">
+        <a href="{{ url('/reports/profit') }}" class="d-block my-1"><i class="fas fa-dollar-sign me-1"></i> Profit Report</a>
+        <a href="{{ url('/reports/low-stock') }}" class="d-block my-1"><i class="fas fa-boxes-stacked me-1"></i> Low Stock</a>
+        <a href="{{ url('/reports/sales') }}" class="d-block my-1"><i class="fas fa-cart-shopping me-1"></i> Sales Report</a>
+        <a href="{{ url('/reports/purchases') }}" class="d-block my-1"><i class="fas fa-shopping-cart me-1"></i> Purchase Report</a>
+        <a href="{{ url('/reports/stock') }}" class="d-block my-1"><i class="fas fa-warehouse me-1"></i> Stock Report</a>
+        <a href="{{ url('/reports/expenses') }}" class="d-block my-1"><i class="fas fa-wallet me-1"></i> Expenses Report</a>
+    </div>
+
     <a href="{{ url('/accounts') }}"><i class="fa-solid fa-building-columns me-2"></i>Accounts</a>
     <a href="{{ url('/transaction_logs') }}"><i class="fas fa-file-invoice-dollar me-2"></i>Transaction-Logs</a>
     <a href="{{ url('/users')}}"><i class="fas fa-user me-2"></i>Users</a>
     <a href="#"><i class="fas fa-cog me-2"></i>Settings</a>
 </div>
-
 
   <div class="content">
     @yield('content')

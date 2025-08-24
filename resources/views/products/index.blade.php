@@ -54,7 +54,7 @@
         {{-- Fixed barcode display --}}
         <td>
     @if($product->barcode)
-        {!! $barcode->getBarcodeHTML($product->barcode, 'C128') !!}
+        <img src="data:image/png;base64,{{ DNS1D::getBarcodePNG($product->barcode, 'C128') }}" alt="barcode" />
         <small>{{ $product->barcode }}</small>
     @else
         <span>No barcode</span>
@@ -66,11 +66,11 @@
         <td>{{ $product->selling_price }}</td>
         <td>{{ $product->stock_quantity }}</td>
         <td>
-          <a href="{{ route('products.edit', $product->id) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+          <a href="{{ route('products.edit', $product->id) }}" class="btn btn-sm btn-warning my-1"><i class="fas fa-edit"></i></a>
           <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="d-inline">
             @csrf
             @method('DELETE')
-            <button class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+            <button class="btn btn-sm btn-danger my-1" onclick="return confirm('Are you sure?')">
               <i class="fas fa-trash"></i>
             </button>
           </form>
