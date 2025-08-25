@@ -71,10 +71,10 @@ Route::middleware(['auth'])->group(function(){
 
 // Reports
 Route::get('/reports/profit', [ReportController::class, 'profit'])->name('reports.profit');
-Route::get('/reports/lowstock', [ReportController::class, 'lowstock'])->name('reports.lowstock');
 Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
 Route::get('/reports/purchases', [ReportController::class, 'purchases'])->name('reports.purchases');
-Route::get('/reports/stock', [ReportController::class, 'stock'])->name('reports.stock');
+Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
+Route::get('/reports/low-stock', [ReportController::class, 'lowStock'])->name('reports.lowStock');
 Route::get('/reports/expenses', [ReportController::class, 'expenses'])->name('reports.expenses');
 
 

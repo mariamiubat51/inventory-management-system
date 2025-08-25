@@ -32,29 +32,23 @@ class ReportController extends Controller
         return view('reports.profit', compact('totalSales', 'totalPurchases', 'profit'));
     }
 
-    public function lowstock()
-    {
-        $products = Product::whereColumn('stock_qty', '<', 'reorder_level')->get();
-        return view('reports.lowstock', compact('products'));
-    }
-
     public function sales(Request $request)
     {
-        // 1️⃣ Default date filter to include all sales
+        // 1 Default date filter to include all sales
         $fromDate = $request->input('from_date', '2000-01-01');
         $toDate = $request->input('to_date', now()->toDateString());
 
-        // 2️⃣ Start query
+        // 2 Start query
         $query = Sale::with('customer');
 
-        // 3️⃣ Apply filters
+        // 3 Apply filters
         $query->whereBetween('sale_date', [$fromDate, $toDate]);
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
         }
 
-        // 4️⃣ Prepare chart data
+        // 4 Prepare chart data
         $chartData = (clone $query)
             ->select(
                 DB::raw('DATE(sale_date) as date'),
@@ -64,15 +58,15 @@ class ReportController extends Controller
             ->orderBy('date')
             ->get();
 
-        // 5️⃣ Get table data
+        // 5 Get table data
         $sales = $query->orderBy('sale_date', 'desc')->get();
 
-        // 6️⃣ Calculate totals
+        // 6 Calculate totals
         $totalSales = $sales->sum('grand_total');
         $totalPaid  = $sales->sum('paid_amount');
         $totalDue   = $sales->sum('due_amount');
 
-        // 7️⃣ Get customers for dropdown
+        // 7 Get customers for dropdown
         $customers = User::orderBy('name')->get(); // Use Customer::orderBy('name')->get() if separate table
 
         return view('reports.sales', [
@@ -129,15 +123,84 @@ class ReportController extends Controller
         ));
     }
 
-    public function stock(Request $request)
+    public function inventory(Request $request)
     {
-        $products = Product::with('category')->get(); // Get all products with category info
-        return view('reports.stock', compact('StockMovement'));
+        // 1. PREPARE DATA FOR FILTERS
+        // Get all products for the filter dropdown
+        $products = Product::orderBy('name')->get();
+
+        // 2. APPLY FILTERS TO A BASE PRODUCT QUERY
+        // This query will be the source for our summary cards and chart
+        $filteredProductsQuery = Product::query();
+        if ($request->filled('product_id')) {
+            $filteredProductsQuery->where('id', $request->product_id);
+        }
+        
+        // Execute the query to get the collection of filtered products
+        $filteredProducts = $filteredProductsQuery->get();
+
+        // 3. CALCULATE SUMMARY CARDS FROM THE *FILTERED* DATA
+        $totalProducts   = $filteredProducts->count();
+        $totalInStock    = $filteredProducts->sum('stock_quantity');
+        $totalOutOfStock = $filteredProducts->where('stock_quantity', '<=', 0)->count();
+
+        // 4. Low Stock Products (where stock_quantity <= reorder_level)
+        $lowStockProducts = $filteredProducts->filter(function ($product) {
+            return $product->stock_quantity <= $product->reorder_level;
+        });
+        $lowStockCount = $lowStockProducts->count();
+
+        // 5. PREPARE CHART DATA FROM THE *FILTERED* DATA
+        $chartLabels = $filteredProducts->pluck('name');
+        $chartData   = $filteredProducts->pluck('stock_quantity');
+
+        // 6. GET STOCK MOVEMENTS BASED ON ALL FILTERS
+        $movementsQuery = StockMovement::with('product')->orderBy('created_at', 'desc');
+
+        // Apply product filter using the IDs from our filtered product list
+        $filteredProductIds = $filteredProducts->pluck('id');
+        $movementsQuery->whereIn('product_id', $filteredProductIds);
+
+        // Apply date filter
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $movementsQuery->whereBetween('created_at', [$request->from_date, $request->to_date]);
+        }
+        
+        $movements = $movementsQuery->get();
+
+        // 7. PASS ALL DYNAMIC DATA TO THE VIEW
+        return view('reports.inventory', [
+            'products'        => $products, // For the dropdown
+            'movements'       => $movements,
+            'totalProducts'   => $totalProducts,
+            'totalInStock'    => $totalInStock,
+            'totalOutOfStock' => $totalOutOfStock,
+            'chartLabels'     => $chartLabels,
+            'chartData'       => $chartData,
+            'lowStockCount'   => $lowStockCount,
+        ]);
     }
 
-    public function expenses()
+    public function lowStock()
     {
-        $expenses = Expense::latest()->get();
-        return view('reports.expenses', compact('expenses'));
+        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'reorder_level')->get();
+
+        return view('reports.low_stock', compact('lowStockProducts'));
+    }
+
+    public function expenses(Request $request)
+    {
+        $from_date = $request->from_date ?? \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
+        $to_date   = $request->to_date ?? \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
+
+        // Fetch expenses with their category and account
+        $expenses = \App\Models\Expense::with(['category', 'account'])
+                    ->whereBetween('date', [$from_date, $to_date])
+                    ->orderBy('date', 'desc')
+                    ->get();
+
+        $totalExpenses = $expenses->sum('amount');
+
+        return view('reports.expenses', compact('expenses', 'totalExpenses', 'from_date', 'to_date'));
     }
 }

@@ -14,12 +14,12 @@ class Product extends Model
         'buying_price',          
         'selling_price',  
         'image',          
-        'stock_quantity'
+        'stock_quantity',
+        'reorder_level'
     ];
 
-    public function category()
-{
-    return $this->belongsTo(Category::class, 'category_id');
-}
-
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
 }

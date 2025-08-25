@@ -68,10 +68,9 @@
     </a>
     <div class="collapse ps-4" id="reportsMenu">
         <a href="{{ url('/reports/profit') }}" class="d-block my-1"><i class="fas fa-dollar-sign me-1"></i> Profit Report</a>
-        <a href="{{ url('/reports/low-stock') }}" class="d-block my-1"><i class="fas fa-boxes-stacked me-1"></i> Low Stock</a>
+        <a href="{{ url('/reports/inventory') }}" class="d-block my-1"><i class="fas fa-warehouse me-1"></i> Inventory Report</a>
         <a href="{{ url('/reports/sales') }}" class="d-block my-1"><i class="fas fa-cart-shopping me-1"></i> Sales Report</a>
         <a href="{{ url('/reports/purchases') }}" class="d-block my-1"><i class="fas fa-shopping-cart me-1"></i> Purchase Report</a>
-        <a href="{{ url('/reports/stock') }}" class="d-block my-1"><i class="fas fa-warehouse me-1"></i> Stock Report</a>
         <a href="{{ url('/reports/expenses') }}" class="d-block my-1"><i class="fas fa-wallet me-1"></i> Expenses Report</a>
     </div>
 
