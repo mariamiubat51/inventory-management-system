@@ -13,8 +13,8 @@
         <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
-    <table class="table table-bordered table-striped">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>ID</th>
                 <th>Date</th>

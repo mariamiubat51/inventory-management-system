@@ -6,8 +6,8 @@
     <a href="{{ route('accounts.index') }}" class="btn btn-secondary mb-3">Back</a>
 
     @if(count($entries))
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>Date</th>
                 <th>Type</th>

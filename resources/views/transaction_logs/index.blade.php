@@ -41,8 +41,8 @@
 
     <a href="{{ route('transaction_logs.create') }}" class="btn btn-success mb-3">Add New Transaction</a>
 
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>ID</th>
                 <th>Date</th>

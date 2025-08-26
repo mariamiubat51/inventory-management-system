@@ -10,10 +10,10 @@
 
     <a href="{{ route('users.create') }}" class="btn btn-primary mb-3">Add New User</a>
 
-    <table class="table table-bordered">
-        <thead class="table-light">
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
-                <th>#</th>
+                <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>

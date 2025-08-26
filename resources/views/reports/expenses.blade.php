@@ -78,7 +78,7 @@
                                 <td>{{ $expense->title }}</td>
                                 <td>{{ $expense->category ? $expense->category->name : '' }}</td>
                                 <td>{{ $expense->amount }}</td>
-                                <td>{{ $expense->account ? $expense->account->name : '' }}</td>
+                                <td>{{ $expense->account ? $expense->account->account_name : '' }}</td>
                                 <td>{{ $expense->note }}</td>
                             </tr>
                             @endforeach

@@ -10,8 +10,8 @@
 
     <a href="{{ route('expenses.create') }}" class="btn btn-primary mb-3">+ Add Expense</a>
 
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>ID</th>
                 <th>Date</th>
@@ -30,7 +30,7 @@
                 <td>{{ $expense->title }}</td>
                 <td>{{ $expense->category->name }}</td>
                 <td>{{ number_format($expense->amount, 2) }}</td>
-                <td>{{ $expense->account->name ?? 'N/A' }}</td>
+                <td>{{ $expense->account->account_name ?? 'N/A' }}</td>
                 <td>
                     <a href="{{ route('expenses.edit', $expense->id) }}" class="btn btn-sm btn-warning">Edit</a>
                     <form action="{{ route('expenses.destroy', $expense->id) }}" method="POST" style="display:inline;">

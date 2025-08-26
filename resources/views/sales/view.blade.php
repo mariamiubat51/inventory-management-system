@@ -24,10 +24,10 @@
                 <strong>Customer:</strong> {{ $sale->customer->name ?? 'Walk-in Customer' }}
             </div>
 
-            <table class="table table-bordered">
-                <thead class="thead-dark">
+            <table class="table table-striped table-bordered align-middle text-center">
+                <thead class="table-dark">
                     <tr>
-                        <th>#</th>
+                        <th>ID</th>
                         <th>Product</th>
                         <th>Qty</th>
                         <th>Price</th>

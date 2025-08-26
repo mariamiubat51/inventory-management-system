@@ -21,8 +21,8 @@
 
     <a href="{{ route('accounts.create') }}" class="btn btn-success mb-3">Add New Account</a>
 
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>Account Code</th>
                 <th>Name</th>

@@ -22,14 +22,55 @@ class ReportController extends Controller
         return view('reports.index'); // main reports page
     }
 
-    public function profit()
+    public function profit(Request $request)
     {
-        // Example: calculate profit = total sales - total purchases
-        $totalSales = Sale::sum('grand_total');
-        $totalPurchases = Purchase::sum('total_amount');
-        $profit = $totalSales - $totalPurchases;
+        // 1. Date range filter
+        $from_date = $request->from_date ?? Carbon::now()->startOfMonth()->format('Y-m-d');
+        $to_date   = $request->to_date ?? Carbon::now()->format('Y-m-d');
 
-        return view('reports.profit', compact('totalSales', 'totalPurchases', 'profit'));
+        // 2. Fetch sales
+        $sales = Sale::with('items.product')
+            ->whereBetween('sale_date', [$from_date, $to_date])
+            ->get();
+
+        // 3. Fetch expenses
+        $expenses = Expense::whereBetween('date', [$from_date, $to_date])->get();
+
+        // 4. Calculate totals
+        $totalSales = $sales->sum('grand_total');
+
+        $totalCOGS = $sales->sum(function($sale){
+            return $sale->items ? $sale->items->sum(fn($item) => $item->quantity * ($item->product->buying_price ?? 0)) : 0;
+        });
+
+        $grossProfit = $totalSales - $totalCOGS;
+
+        $totalExpenses = $expenses->sum('amount');
+
+        $netProfit = $grossProfit - $totalExpenses;
+
+
+        // 5. Prepare data for chart (profit per day)
+        $chartData = $sales->groupBy(function($sale) {
+            return Carbon::parse($sale->sale_date)->format('Y-m-d'); // group by date only
+        })->map(function($dailySales) {
+            $dailyTotal = $dailySales->sum('grand_total');
+            $dailyCOGS = $dailySales->sum(function($sale) {
+                return $sale->items ? $sale->items->sum(fn($item) => $item->quantity * ($item->product->buying_price ?? 0)) : 0;
+            });
+            return $dailyTotal - $dailyCOGS;
+        });
+
+        $chartLabels = $chartData->keys();   // just dates
+        $chartProfit = $chartData->values(); // profit values
+
+
+        // 6. Return view with all data
+        return view('reports.profit', compact(
+            'from_date','to_date','sales','expenses',
+            'totalSales','totalCOGS','grossProfit','totalExpenses','netProfit',
+            'chartLabels','chartProfit'
+        ));
     }
 
     public function sales(Request $request)

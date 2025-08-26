@@ -12,7 +12,7 @@
         ➕ Create New Sale
     </a>
 
-    <table class="table table-bordered table-hover">
+    <table class="table table-striped table-bordered align-middle text-center">
         <thead class="table-dark">
             <tr>
                 <th>ID</th>

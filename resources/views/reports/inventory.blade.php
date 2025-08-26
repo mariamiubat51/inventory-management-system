@@ -35,7 +35,7 @@
                 <div class="card-body">
                     ⚠️ Low Stock Products: {{ $lowStockCount }}
                 </div>
-                <a href="{{ route('reports.lowStock') }}" class="card-footer text-white small">
+                <a href="{{ route('reports.lowStock') }}" class="card-footer text-decoration-none text-white small">
                     View Details →
                 </a>
             </div>
@@ -99,12 +99,12 @@
                         <tr>
                             <th>ID</th>
                             <th>Product Code</th>
+                            <th>Date</th>
                             <th>Product Name</th>
                             <th>Movement Type</th>
                             <th>Quantity</th>
                             <th>Current Quantity</th>
                             <th>Reference</th>
-                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -112,6 +112,7 @@
                             <tr>
                                 <td>{{ $i + 1 }}</td>
                                 <td>{{ $movement->product->product_code ?? 'N/A' }}</td>
+                                <td>{{ $movement->created_at->format('d M, Y') }}</td>
                                 <td>{{ $movement->product->name ?? 'N/A' }}</td>
                                 <td>
                                     @if($movement->movement_type == 'Sale')
@@ -125,7 +126,6 @@
                                 <td>{{ $movement->quantity }}</td>
                                 <td>{{ $movement->balance }}</td>
                                 <td>{{ $movement->reference }}</td>
-                                <td>{{ $movement->created_at->format('d M, Y') }}</td>
                             </tr>
                         @empty
                             <tr>

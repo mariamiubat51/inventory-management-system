@@ -12,8 +12,8 @@
         <strong>Notes:</strong> {{ $purchase->notes ?? 'None' }}
     </div>
 
-    <table class="table table-bordered">
-        <thead class="table-light">
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>Product</th>
                 <th>Quantity</th>

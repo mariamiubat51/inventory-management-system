@@ -11,8 +11,8 @@
     @endif
 
     @if($categories->count())
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-striped table-bordered align-middle text-center">
+        <thead class="table-dark">
             <tr>
                 <th>ID</th>
                 <th>Name</th>
