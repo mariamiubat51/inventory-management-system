@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -231,17 +232,29 @@ class ReportController extends Controller
 
     public function expenses(Request $request)
     {
+        // Default date range: current month
         $from_date = $request->from_date ?? \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
         $to_date   = $request->to_date ?? \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
 
-        // Fetch expenses with their category and account
-        $expenses = \App\Models\Expense::with(['category', 'account'])
-                    ->whereBetween('date', [$from_date, $to_date])
-                    ->orderBy('date', 'desc')
-                    ->get();
+        // Get all expense categories for the dropdown
+        $categories = \App\Models\ExpenseCategory::all();
 
+        // Build the query with eager loading for category & account
+        $query = \App\Models\Expense::with(['category', 'account'])
+                    ->whereBetween('date', [$from_date, $to_date])
+                    ->orderBy('date', 'desc');
+
+        // Filter by category if selected
+        if ($request->category_id) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Get filtered expenses
+        $expenses = $query->get();
+
+        // Total amount
         $totalExpenses = $expenses->sum('amount');
 
-        return view('reports.expenses', compact('expenses', 'totalExpenses', 'from_date', 'to_date'));
+        return view('reports.expenses', compact('expenses', 'totalExpenses', 'from_date', 'to_date', 'categories'));
     }
 }
