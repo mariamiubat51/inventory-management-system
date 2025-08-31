@@ -31,7 +31,7 @@ class TransactionLogController extends Controller
             $query->where('transaction_date', '<=', $request->date_to);
         }
 
-        $transactions = $query->paginate(15);
+        $transactions = $query->simplePaginate(15);
 
         $accounts = Account::all();
 

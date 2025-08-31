@@ -45,5 +45,9 @@
             @endforeach
         </tbody>
     </table>
+
+    <div class="mt-3">
+        {{ $suppliers->links()}}
+    </div>
 </div>
 @endsection

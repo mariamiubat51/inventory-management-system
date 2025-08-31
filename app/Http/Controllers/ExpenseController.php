@@ -14,7 +14,7 @@ class ExpenseController extends Controller
     // Show all expenses
     public function index()
     {
-        $expenses = Expense::with('category', 'account')->latest()->get();
+        $expenses = Expense::with('category', 'account')->latest()->simplePaginate(15);
         return view('expenses.index', compact('expenses'));
     }
 

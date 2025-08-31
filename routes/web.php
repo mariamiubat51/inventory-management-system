@@ -16,6 +16,8 @@ use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingController;
+
 
 
 // Dashboard
@@ -76,6 +78,11 @@ Route::get('/reports/purchases', [ReportController::class, 'purchases'])->name('
 Route::get('/reports/inventory', [ReportController::class, 'inventory'])->name('reports.inventory');
 Route::get('/reports/low-stock', [ReportController::class, 'lowStock'])->name('reports.lowStock');
 Route::get('/reports/expenses', [ReportController::class, 'expenses'])->name('reports.expenses');
+
+
+// Settings routes
+Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
 
 
 // Welcome Page

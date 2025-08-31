@@ -24,6 +24,7 @@
     <table class="table table-striped table-bordered align-middle text-center">
         <thead class="table-dark">
             <tr>
+                <th>ID</th>
                 <th>Account Code</th>
                 <th>Name</th>
                 <th>Type</th>
@@ -36,6 +37,7 @@
         <tbody>
             @forelse($accounts as $account)
             <tr>
+                <td>{{ $account->id }}</td>
                 <td>{{ $account->account_code }}</td>
                 <td>{{ $account->account_name }}</td>
                 <td>{{ ucfirst($account->account_type) }}</td>
@@ -61,5 +63,9 @@
             @endforelse
         </tbody>
     </table>
+
+    <div class="mt-3">
+        {{ $accounts->links() }}
+    </div>
 </div>
 @endsection

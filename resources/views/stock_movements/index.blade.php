@@ -47,5 +47,9 @@
             @endforeach
         </tbody>
     </table>
+
+    <div class="mt-3">
+        {{ $movements->links() }}
+    </div>
 </div>
 @endsection

@@ -83,5 +83,10 @@
       @endforelse
     </tbody>
   </table>
+
+  <!-- Pagination -->
+  <div class="mt-3">
+    {{ $products->links() }}
+  </div>
 </div>
 @endsection

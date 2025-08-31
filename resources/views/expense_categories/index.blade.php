@@ -40,5 +40,10 @@
     @else
     <p>No categories found.</p>
     @endif
+
+    <!-- Pagination -->
+     <div class="mt-3">
+        {{ $categories->links() }}
+     </div>
 </div>
 @endsection

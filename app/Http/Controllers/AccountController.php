@@ -17,7 +17,7 @@ class AccountController extends Controller
                 ->orWhere('account_type', 'like', "%$search%");
         }
 
-        $accounts = $query->orderBy('id', 'desc')->get();
+        $accounts = $query->orderBy('id', 'desc')->simplePaginate(15);
 
         return view('accounts.index', compact('accounts'));
     }

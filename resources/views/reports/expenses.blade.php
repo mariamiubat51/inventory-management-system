@@ -33,17 +33,16 @@
                         <input type="date" name="to_date" class="form-control" value="{{ $to_date }}">
                     </div>
                     <div class="col-md-3 mb-2">
-    <label for="category">Category</label>
-    <select name="category_id" id="category" class="form-control">
-        <option value="">All Categories</option>
-        @foreach($categories as $category)
-            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                {{ $category->name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-
+                        <label for="category">Category</label>
+                        <select name="category_id" id="category" class="form-control">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-3 align-self-end">
                         <button type="submit" class="btn btn-primary">Apply Filter</button>
                     </div>

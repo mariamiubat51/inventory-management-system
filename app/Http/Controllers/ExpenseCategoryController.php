@@ -10,7 +10,7 @@ class ExpenseCategoryController extends Controller
     // List all categories
     public function index()
     {
-        $categories = ExpenseCategory::latest()->get();
+        $categories = ExpenseCategory::latest()->simplePaginate(15);
         return view('expense_categories.index', compact('categories'));
     }
 

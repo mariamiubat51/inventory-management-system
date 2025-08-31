@@ -71,7 +71,7 @@
                             <img 
                                 src="{{ ($product->image && file_exists(storage_path('app/public/' . $product->image))) 
                                         ? asset('storage/' . $product->image) 
-                                        : asset('products/storesyncLogo.png') }}" 
+                                        : asset('storage/products/storesyncLogo.png') }}" 
                                 class="card-img-top" 
                                 style="height:150px; object-fit:cover;" 
                                 alt="Product Image"

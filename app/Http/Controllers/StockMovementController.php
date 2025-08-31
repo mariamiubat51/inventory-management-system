@@ -11,7 +11,7 @@ class StockMovementController extends Controller
 {
     public function index()
     {
-        $movements = StockMovement::with('product','user')->orderBy('created_at','desc')->get();
+        $movements = StockMovement::with('product','user')->orderBy('created_at','desc')->simplePaginate(15);
         return view('stock_movements.index', compact('movements'));
     }
 

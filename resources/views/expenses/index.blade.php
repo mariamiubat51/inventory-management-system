@@ -44,5 +44,10 @@
         @endforelse
         </tbody>
     </table>
+
+    <!-- Pagination -->
+    <div class="mt-3">
+        {{ $expenses->links() }}
+    </div>
 </div>
 @endsection

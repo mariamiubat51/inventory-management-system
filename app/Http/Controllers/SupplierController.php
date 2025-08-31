@@ -10,7 +10,7 @@ class SupplierController extends Controller
 {
     public function index()
     {
-        $suppliers = Supplier::latest()->get();
+        $suppliers = Supplier::latest()->simplePaginate(15);
         return view('suppliers.index', compact('suppliers'));
     }
 
