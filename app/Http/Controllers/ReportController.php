@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\Purchase;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Expense;
@@ -77,8 +78,8 @@ class ReportController extends Controller
     public function sales(Request $request)
     {
         // 1 Default date filter to include all sales
-        $fromDate = $request->input('from_date', '2000-01-01');
-        $toDate = $request->input('to_date', now()->toDateString());
+        $fromDate = $request->input('from_date', now()->toDateString());
+        $toDate   = $request->input('to_date', now()->toDateString());
 
         // 2 Start query
         $query = Sale::with('customer');
@@ -203,10 +204,12 @@ class ReportController extends Controller
         $filteredProductIds = $filteredProducts->pluck('id');
         $movementsQuery->whereIn('product_id', $filteredProductIds);
 
-        // Apply date filter
-        if ($request->filled('from_date') && $request->filled('to_date')) {
-            $movementsQuery->whereBetween('created_at', [$request->from_date, $request->to_date]);
-        }
+        // Default date range
+        $from_date = $request->from_date ?? '2025-07-01'; // Replace with actual business start date
+        $to_date   = $request->to_date   ?? Carbon::now()->format('Y-m-d'); // Today
+
+        // Step 2: Apply the date filter
+        $movementsQuery->whereBetween('created_at', [$from_date, $to_date]);
         
         $movements = $movementsQuery->get();
 
@@ -220,14 +223,21 @@ class ReportController extends Controller
             'chartLabels'     => $chartLabels,
             'chartData'       => $chartData,
             'lowStockCount'   => $lowStockCount,
+            'from_date'       => $from_date,  
+            'to_date'         => $to_date, 
         ]);
     }
 
     public function lowStock()
     {
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'reorder_level')->get();
+        // Get the low stock alert from settings
+        $setting = Setting::first();
+        $lowStockAlert = $setting->low_stock_alert ?? 5; // default 5 if not set
 
-        return view('reports.low_stock', compact('lowStockProducts'));
+        // Get products with stock_quantity <= lowStockAlert
+        $lowStockProducts = Product::where('stock_quantity', '<=', $lowStockAlert)->get();
+
+        return view('reports.low_stock', compact('lowStockProducts', 'lowStockAlert'));
     }
 
     public function expenses(Request $request)

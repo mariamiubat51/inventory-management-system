@@ -18,7 +18,7 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $product->name }}</td>
                     <td>{{ $product->stock_quantity }}</td>
-                    <td>{{ $product->reorder_level }}</td>
+                    <td>{{ $lowStockAlert }}</td>
                 </tr>
             @endforeach
         </tbody>

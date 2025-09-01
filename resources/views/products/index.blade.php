@@ -53,13 +53,13 @@
 
         {{-- Fixed barcode display --}}
         <td>
-    @if($product->barcode)
-        <img src="data:image/png;base64,{{ DNS1D::getBarcodePNG($product->barcode, 'C128') }}" alt="barcode" />
-        <small>{{ $product->barcode }}</small>
-    @else
-        <span>No barcode</span>
-    @endif
-</td>
+            @if($product->barcode)
+                <img src="data:image/png;base64,{{ DNS1D::getBarcodePNG($product->barcode, 'C128') }}" alt="barcode" />
+                <small>{{ $product->barcode }}</small>
+            @else
+                <span>No barcode</span>
+            @endif
+        </td>
 
         <td>{{ $product->description }}</td>
         <td>{{ $product->buying_price }}</td>

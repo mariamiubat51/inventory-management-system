@@ -63,11 +63,11 @@
                     </div>
                     <div class="col-md-3 mb-2">
                         <label for="from_date">From Date</label>
-                        <input type="date" id="from_date" name="from_date" value="{{ request('from_date') }}" class="form-control">
+                        <input type="date" id="from_date" name="from_date" value="{{ $from_date }}" class="form-control">
                     </div>
                     <div class="col-md-3 mb-2">
                         <label for="to_date">To Date</label>
-                        <input type="date" id="to_date" name="to_date" value="{{ request('to_date') }}" class="form-control">
+                        <input type="date" id="to_date" name="to_date" value="{{ $to_date }}" class="form-control">
                     </div>
                     <div class="col-md-2 mb-2">
                         <button type="submit" class="btn btn-primary w-100">Apply Filter</button>

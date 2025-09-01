@@ -102,7 +102,7 @@ class DashboardController extends Controller
         for ($i = 1; $i <= 12; $i++) {
             $months[] = date('F', mktime(0, 0, 0, $i, 1));
             $rev = $revenueData->firstWhere('month', $i);
-            $pro = $profitData->firstWhere('month', $i);
+            $pro = $profitData->firstWhere('month', $i); 
             $revenue[] = $rev->revenue ?? 0;
             $profit[] = $pro->profit ?? 0;
         }
