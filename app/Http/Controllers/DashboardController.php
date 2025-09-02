@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Purchase;
+use App\Models\Setting;
 use App\Models\TransactionLog;
 use Carbon\Carbon;
 use DB;
@@ -51,10 +52,14 @@ class DashboardController extends Controller
             ->sum(DB::raw('grand_total - paid_amount'));
         $totalPurchases = Purchase::whereBetween('purchase_date', [$from_date, $to_date])->sum('total_amount'); // check column name
         $totalProfit = $totalSales - $totalPurchases;
-        $lowStockCount = Product::whereColumn('stock_quantity', '<=', 'reorder_level')->count();
+        $lowStockAlert = Setting::first()->low_stock_alert ?? 5;
+        $lowStockCount = Product::where('stock_quantity', '<=', $lowStockAlert)->count();
 
         // Charts Data
-        $purchasesTrend = Purchase::select(DB::raw('DATE(purchase_date) as date'), DB::raw('SUM(total_amount) as total'))
+        $purchasesTrend = Purchase::select(
+                DB::raw('DATE(purchase_date) as date'), 
+                DB::raw('SUM(total_amount) as total')
+            )
             ->whereBetween('purchase_date', [$from_date, $to_date])
             ->groupBy('date')
             ->orderBy('date')
@@ -70,40 +75,40 @@ class DashboardController extends Controller
 
         $mostSelling = $topProducts->first();
 
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'reorder_level')
+        $lowStockProducts = Product::where('stock_quantity', '<=', $lowStockAlert)
             ->select('name', 'stock_quantity')
             ->get();
 
-        // Monthly Revenue & Profit
-        $revenueData = Sale::select(
-                DB::raw('MONTH(sale_date) as month'),
+        // Daily Revenue & Profit
+        $dailyRevenue = Sale::select(
+                DB::raw('DATE(sale_date) as date'),
                 DB::raw('SUM(grand_total) as revenue')
             )
             ->whereBetween('sale_date', [$from_date, $to_date])
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupBy('date')
+            ->orderBy('date')
             ->get();
 
-        $profitData = Sale::join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+        $dailyProfit = Sale::join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
             ->join('products', 'products.id', '=', 'sale_items.product_id')
             ->select(
-                DB::raw('MONTH(sales.sale_date) as month'),
+                DB::raw('DATE(sales.sale_date) as date'),
                 DB::raw('SUM(sales.grand_total - (products.buying_price * sale_items.quantity)) as profit')
             )
             ->whereBetween('sales.sale_date', [$from_date, $to_date])
-            ->groupBy('month')
-            ->orderBy('month')
+            ->groupBy('date')
+            ->orderBy('date')
             ->get();
 
-        $months = [];
+        // Prepare arrays for chart
+        $dates = [];
         $revenue = [];
         $profit = [];
 
-        for ($i = 1; $i <= 12; $i++) {
-            $months[] = date('F', mktime(0, 0, 0, $i, 1));
-            $rev = $revenueData->firstWhere('month', $i);
-            $pro = $profitData->firstWhere('month', $i); 
-            $revenue[] = $rev->revenue ?? 0;
+        foreach ($dailyRevenue as $rev) {
+            $dates[] = $rev->date;
+            $revenue[] = $rev->revenue;
+            $pro = $dailyProfit->firstWhere('date', $rev->date);
             $profit[] = $pro->profit ?? 0;
         }
 
@@ -112,7 +117,7 @@ class DashboardController extends Controller
             'totalSales', 'totalPurchases', 'totalProfit', 'lowStockCount',
             'purchasesTrend', 'topProducts', 'lowStockProducts', 'recentSales',
             'recentPurchases', 'recentTransactions', 'mostSelling', 'totalDue',
-            'months','revenue','profit', 'products', 'search'
+            'dates','revenue','profit', 'products', 'search'
         ));
     }
 

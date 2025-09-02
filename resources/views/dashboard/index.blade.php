@@ -219,7 +219,7 @@
     new Chart(document.getElementById('revenueChart'), {
         type: 'line',
         data: {
-            labels: @json($months),
+            labels: @json($dates),
             datasets: [{
                 label: 'Revenue',
                 data: @json($revenue),
@@ -236,7 +236,7 @@
     new Chart(document.getElementById('profitChart'), {
         type: 'line',
         data: {
-            labels: @json($months),
+            labels: @json($dates),
             datasets: [{
                 label: 'Profit',
                 data: @json($profit),

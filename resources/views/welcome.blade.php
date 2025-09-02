@@ -14,7 +14,7 @@
     <style>
         body {
             background: linear-gradient(135deg, #4c3232ff, #734646ff);
-            background-image: url({{ asset('storage/products/1-background-inventory-management.png') }});
+            background-image: url({{ asset('storage/products/background-2-Inventory-Management.jpg') }});
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -28,7 +28,7 @@
         }
         .logo {
             font-size: 3rem;
-            color: #b98d25ff;
+            color: #2576b9ff;
         }
         .btn-custom {
             border-radius: 30px;
@@ -51,10 +51,10 @@
 
         <!-- Buttons -->
         <div class="d-grid gap-3">
-            <a href="{{ route('login') }}" class="btn btn-warning btn-custom">
+            <a href="{{ route('login') }}" class="btn btn-primary btn-custom">
                 <i class="bi bi-box-arrow-in-right me-2"></i> Login
             </a>
-            <a href="{{ route('register') }}" class="btn btn-outline-secondary btn-custom">
+            <a href="{{ route('register') }}" class="btn btn-outline-info btn-custom">
                 <i class="bi bi-person-plus me-2"></i> Register
             </a>
         </div>

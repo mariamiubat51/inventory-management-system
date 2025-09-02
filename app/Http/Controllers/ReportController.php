@@ -187,11 +187,16 @@ class ReportController extends Controller
         $totalInStock    = $filteredProducts->sum('stock_quantity');
         $totalOutOfStock = $filteredProducts->where('stock_quantity', '<=', 0)->count();
 
-        // 4. Low Stock Products (where stock_quantity <= reorder_level)
-        $lowStockProducts = $filteredProducts->filter(function ($product) {
-            return $product->stock_quantity <= $product->reorder_level;
+        // 4. Get the low stock alert from settings
+        $setting = Setting::first();
+        $lowStockAlert = $setting->low_stock_alert ?? 5; // default 5 if not set
+
+        // Low Stock Products
+        $lowStockProducts = $filteredProducts->filter(function ($product) use ($lowStockAlert) {
+            return $product->stock_quantity <= $lowStockAlert;
         });
         $lowStockCount = $lowStockProducts->count();
+
 
         // 5. PREPARE CHART DATA FROM THE *FILTERED* DATA
         $chartLabels = $filteredProducts->pluck('name');
