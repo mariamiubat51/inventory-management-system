@@ -26,10 +26,6 @@
             border-radius: 20px;
             box-shadow: 0px 6px 25px rgba(0, 0, 0, 0.15);
         }
-        .logo {
-            font-size: 3rem;
-            color: #2576b9ff;
-        }
         .btn-custom {
             border-radius: 30px;
             padding: 10px 30px;
@@ -42,7 +38,7 @@
     <div class="card p-5 text-center" style="max-width: 450px; width: 100%;">
         <!-- Logo -->
         <div class="mb-3">
-            <i class="bi bi-box-seam-fill logo"></i>
+            <img src="{{ asset('storage/storesyncLogo.png') }}" alt="StoreSync" style="height:70px;">
         </div>
 
         <!-- Title -->

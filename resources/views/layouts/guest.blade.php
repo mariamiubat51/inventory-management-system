@@ -29,10 +29,16 @@
                     <!-- Right Side: Form -->
                     <div class="col-md-6">
                         <div class="card-body p-4">
-                            <div class="text-center mb-4">
-                                <img src="{{ asset('storage/products/background-2-Inventory-Management.jpg') }}" 
-                                    class="img-fluid" style="max-width: 80px;" alt="Logo">
+                            <!-- Logo + App Name side by side -->
+                            <div class="d-flex align-items-center justify-content-center mb-4">
+                                <img src="{{ asset('storage/storesyncLogo.png') }}" 
+                                    class="img-fluid" 
+                                    style="height: 50px;" 
+                                    alt="StoreSync Logo">
+                                <h1 class="ms-2 mb-0 text-white" style="font-size: 2rem;">StoreSync</h1>
                             </div>
+
+                            <!-- Form will go here -->
                             {{ $slot }}
                         </div>
                     </div>
