@@ -14,9 +14,11 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\POSController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
+
 
 
 
@@ -59,9 +61,26 @@ Route::resource('expenses', ExpenseController::class);
 Route::resource('expense-categories', ExpenseCategoryController::class);
 
 // POS
-Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
-Route::post('/pos/sale', [POSController::class, 'store'])->name('pos.store');
-Route::get('/pos/get-product/{barcode}', [POSController::class, 'getProductByBarcode']);
+Route::middleware(['auth'])->group(function() {
+    Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
+    Route::post('/pos/sale', [POSController::class, 'store'])->name('pos.store');
+    Route::get('/pos/get-product/{barcode}', [POSController::class, 'getProductByBarcode']);
+    Route::post('/pos/register/open', [CashRegisterController::class, 'openRegister'])->name('cashregister.open');
+    Route::post('/pos/register/close', [CashRegisterController::class, 'closeRegister'])->name('cashregister.close');
+});
+
+
+// CashRegister
+Route::post('/cashregister/open', [CashRegisterController::class, 'openRegister'])->name('cashregister.open');
+Route::post('/cashregister/close', [CashRegisterController::class, 'closeRegister'])->name('cashregister.close');
+
+
+// Optional: route to view all registers
+Route::get('/cashregister', [CashRegisterController::class, 'index'])->name('cashregister.index');
+//Route::get('/cash-register/open', [CashRegisterController::class, 'open'])->name('cash-register.open');
+//Route::post('/cash-register/store', [CashRegisterController::class, 'store'])->name('cash-register.store');
+//Route::post('/cash-register/close/{register}', [CashRegisterController::class, 'close'])->name('cash-register.close');
+
 
 // stock-movements
 Route::middleware(['auth'])->group(function(){

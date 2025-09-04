@@ -11,9 +11,11 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\TransactionLog;
 use App\Models\StockMovement;
+use App\Models\CashRegister;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException; // <-- Add this
+use Illuminate\Validation\ValidationException; 
+
 
 class POSController extends Controller
 {
@@ -22,8 +24,10 @@ class POSController extends Controller
         $products = Product::all();
         $customers = User::where('role', 'customer')->get();
         $accounts = Account::all();
+        $todayRegister = CashRegister::where('date', now()->toDateString())
+                            ->latest()->first();
 
-        return view('pos.index', compact('products', 'customers', 'accounts'));
+        return view('pos.index', compact('products', 'customers', 'accounts', 'todayRegister'));
     }
 
 
@@ -52,6 +56,18 @@ class POSController extends Controller
                 ]);
             }
         }
+
+        //Cash Register
+        $today = now()->toDateString();
+        $register = CashRegister::where('date', $today)->where('status', 'open')->first();
+
+        if (!$register) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cash register is not open for today. Please open it first.'
+            ], 403);
+        }
+
 
         DB::beginTransaction();
 
@@ -98,12 +114,17 @@ class POSController extends Controller
             $invoiceNo = 'INV-' . strtoupper(Str::random(6));
 
             $sale = Sale::create([
-                'invoice_no' => $invoiceNo, 'sale_date' => now(),
-                'customer_id' => $customerId, 'subtotal' => $subtotal,
-                'discount' => $discountAmount, // Save the calculated amount
-                'grand_total' => $grandTotal, 'paid_amount' => $paidAmount,
-                'due_amount' => $dueAmount, 'payment_method' => $request->payment_method,
+                'invoice_no' => $invoiceNo, 
+                'sale_date' => now(),
+                'customer_id' => $customerId, 
+                'subtotal' => $subtotal,
+                'discount' => $discountAmount, 
+                'grand_total' => $grandTotal, 
+                'paid_amount' => $paidAmount,
+                'due_amount' => $dueAmount, 
+                'payment_method' => $request->payment_method,
                 'note' => $request->note ?? null,
+                'cash_register_id' => $register->id,
             ]);
 
             foreach ($request->items as $item) {

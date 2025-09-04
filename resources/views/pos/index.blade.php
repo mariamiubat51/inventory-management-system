@@ -1,20 +1,16 @@
+@php
+use App\Models\CashRegister;
+
+$todayRegister = CashRegister::where('date', now()->toDateString())->first();
+@endphp
+
 @extends('layouts.app')
 
 @section('content')
 <div class="container">
-    <h2>Point of Sale (POS)</h2>
+    <h2 class="mb-4">Point of Sale (POS)</h2>
 
-    <div class="mb-3">
-        <label for="customer" class="form-label">Select Customer</label>
-        <select id="customer" name="customer_id" class="form-control">
-            <option value="">-- Select Customer --</option>
-            <option value="walkin">Walk-in Customer</option>
-            @foreach($customers as $customer)
-                <option value="{{ $customer->id }}">{{ $customer->name }}</option>
-            @endforeach
-        </select>
-    </div>
-
+    <!--Walkin Customer-->
     <input type="hidden" id="walkin_name_hidden">
     <input type="hidden" id="walkin_email_hidden">
     <input type="hidden" id="walkin_phone_hidden">
@@ -55,6 +51,16 @@
 
     <div class="row">
         <div class="col-md-8">
+            <div class="mb-3">
+                <label for="customer" class="form-label">Select Customer</label>
+                <select id="customer" name="customer_id" class="form-control">
+                    <option value="">-- Select Customer --</option>
+                    <option value="walkin">Walk-in Customer</option>
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}">{{ $customer->name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="mb-3">
                 <input type="text" id="product-search" class="form-control" placeholder="Search product...">
             </div>
@@ -109,6 +115,41 @@
         </div>
 
         <div class="col-md-4">
+            <div class="mb-3 border p-3 rounded shadow 
+                @if(!$todayRegister || $todayRegister->status == 'closed') bg-success-subtle
+                @elseif($todayRegister && $todayRegister->status == 'open') bg-danger-subtle
+                @endif">
+
+                {{-- Show today’s register info --}}
+                @if($todayRegister)
+                    <p>
+                        Today’s Register: <strong>{{ ucfirst($todayRegister->status) }}</strong> <br>
+                        Opening: {{ $todayRegister->opening_amount }} | 
+                        Total Sales: {{ \App\Models\Sale::whereDate('created_at', $todayRegister->date)->sum('grand_total') }}
+
+                        @if($todayRegister->status == 'closed')
+                            | Closing: {{ $todayRegister->closing_amount }}
+                        @endif
+                    </p>
+                @endif
+
+                {{-- Open/Close forms --}}
+                @if(!$todayRegister || $todayRegister->status == 'closed')
+                    <form action="{{ route('cashregister.open') }}" method="POST" class="d-flex gap-2 align-items-center">
+                        @csrf
+                        <input type="number" step="0.01" name="opening_amount" placeholder="Opening Amount" class="form-control" required>
+                        <button type="submit" class="btn btn-success">Open Register</button>
+                    </form>
+                @elseif($todayRegister && $todayRegister->status == 'open')
+                    <form action="{{ route('cashregister.close') }}" method="POST" class="d-flex gap-2 align-items-center">
+                        @csrf
+                        <input type="number" step="0.01" name="closing_amount" placeholder="Closing Amount" class="form-control">
+                        <input type="text" name="notes" placeholder="Notes" class="form-control">
+                        <button type="submit" class="btn btn-danger">Close Register</button>
+                    </form>
+                @endif
+            </div>
+
             <div class="border p-3 rounded bg-light shadow">
                 <h4 class="mb-3">Cart</h4>
                 <table class="table table-bordered" id="cart-table">

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid">
 
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -12,14 +12,6 @@
 
         <!-- Right: Search + User Info + Logout -->
         <div class="d-flex align-items-center gap-3">
-            <!-- Search form -->
-            <form action="{{ route('dashboard') }}" method="GET" class="d-flex">
-                <input type="text" name="search" class="form-control form-control-sm rounded-pill" placeholder="Search...">
-                <button type="submit" class="btn btn-sm ms-2" style="background: transparent; border: none;">
-                    <i class="fas fa-search"></i>
-                </button>
-            </form>
-
             <!-- User name -->
             <span class="fw-medium">{{ Auth::user()->name }}</span>
 
@@ -35,39 +27,39 @@
     {{-- Key Metrics --}}
     <div>
         <div class="row g-4 mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-primary text-white">
                     <h6>Total Profit</h6>
                     <h3 class="fw-bold">{{ number_format($totalProfit,2) }}</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-success text-white">
                     <h6>Total Sales</h6>
                     <h3 class="fw-bold">{{ number_format($totalSales,2) }}</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-warning text-white">
                     <h6>Total Purchases</h6>
                     <h3 class="fw-bold">{{ number_format($totalPurchases,2) }}</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+        </div>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-secondary text-white">
                     <h6>Total Due</h6>
                     <h3 class="fw-bold">{{ number_format($totalDue,2) }}</h3>
                 </div>
             </div>
-        </div>
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-danger text-white">
                     <h6>Low Stock</h6>
                     <h3 class="fw-bold">{{ $lowStockCount }}</h3>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card shadow-sm border-0 text-center p-3 bg-info text-white">
                     <h6>Most Selling Product</h6>
                     @if($mostSelling)
@@ -105,6 +97,15 @@
 
         {{-- Right Side - Tables --}}
         <div class="col-lg-6">
+            <!-- Search form -->
+            <div class="col-6 ms-auto mb-3">
+                <form action="{{ route('dashboard') }}" method="GET" class="d-flex">
+                <input type="text" name="search" class="form-control form-control-sm rounded-pill" placeholder="Search...">
+                <button type="submit" class="btn btn-sm ms-2" style="background: transparent; border: none;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+            </div>
             <div class="card shadow-sm p-3 border-0 mb-4">
                 <h5 class="fw-bold mb-3">Recent Sales</h5>
                 <table class="table table-hover table-striped">

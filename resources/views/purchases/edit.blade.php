@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-4">Edit Purchase #{{ $purchase->id }}</h2>
+    <h2 class="mb-4">Edit Purchase</h2>
 
     @if(session('error'))
         <div class="alert alert-danger">{{ session('error') }}</div>
@@ -13,44 +13,43 @@
         @method('PUT')
 
         <div class="row mb-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label>Supplier</label>
                 <select name="supplier_id" class="form-control" required>
                     <option value="">-- Select Supplier --</option>
                     @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}" 
-                            {{ (old('supplier_id', $purchase->supplier_id) == $supplier->id) ? 'selected' : '' }}>
+                        <option value="{{ $supplier->id }}" {{ ($purchase->supplier_id == $supplier->id) ? 'selected' : '' }}>
                             {{ $supplier->name }}
                         </option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <label>Purchase Date</label>
-                <input type="date" name="purchase_date" class="form-control" 
-                    value="{{ old('purchase_date', $purchase->purchase_date->format('Y-m-d')) }}" required>
+                <input type="date" name="purchase_date" class="form-control" value="{{ old('purchase_date', $purchase->purchase_date->format('Y-m-d')) }}" required>
             </div>
-            <div class="col-md-4">
+        </div>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
                 <label>Account</label>
                 <select name="account_id" id="account_id" class="form-control" required>
-                <option value="">-- Select Account --</option>
-                @foreach($accounts as $account)
-                    <option value="{{ $account->id }}" 
-                        data-balance="{{ $account->total_balance }}"
-                        {{ (old('account_id', optional(optional($purchase->transactionLogs)->first())->account_id) == $account->id) ? 'selected' : '' }}>
-                        {{ $account->account_name }}
-                    </option>
-                @endforeach
-            </select>
+                    <option value="">-- Select Account --</option>
+                    @foreach($accounts as $account)
+                        <option value="{{ $account->id }}" data-balance="{{ $account->total_balance }}"
+                            {{ old('account_id', $purchase->account_id) == $account->id ? 'selected' : '' }}>
+                            {{ $account->account_name }}
+                        </option>
+                    @endforeach
+                </select>
 
-            @error('account_id')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
+                <small class="form-text text-muted mt-1 text-success" id="account_balance_text">
+                    Available Balance: 0.00
+                </small>
 
-            <small class="form-text text-muted mt-1" id="account_balance_text">
-                Available Balance: 0.00
-            </small>
-
+                @error('account_id')
+                    <div class="text-danger">{{ $message }}</div>
+                @enderror
             </div>
         </div>
 
@@ -65,32 +64,23 @@
                 </tr>
             </thead>
             <tbody>
-                @php
-                    $oldProducts = old('product_id', $purchase->items->pluck('product_id')->toArray());
-                    $oldQtys = old('quantity', $purchase->items->pluck('quantity')->toArray());
-                    $oldPrices = old('buying_price', $purchase->items->pluck('buying_price')->toArray());
-                @endphp
-
-                @foreach($oldProducts as $index => $productId)
+                @foreach(old('product_id', $purchase->items->pluck('product_id')) as $index => $productId)
                 <tr>
                     <td>
                         <select name="product_id[]" class="form-control product-select" required>
                             <option value="">-- Select Product --</option>
                             @foreach($products as $product)
-                                <option value="{{ $product->id }}" 
-                                    {{ $product->id == $productId ? 'selected' : '' }}>
+                                <option value="{{ $product->id }}" {{ $product->id == $productId ? 'selected' : '' }}>
                                     {{ $product->name }}
                                 </option>
                             @endforeach
                         </select>
                     </td>
                     <td>
-                        <input type="number" name="quantity[]" class="form-control qty" min="1" required
-                            value="{{ $oldQtys[$index] ?? 1 }}">
+                        <input type="number" name="quantity[]" class="form-control qty" min="1" required value="{{ old('quantity')[$index] ?? $purchase->items[$index]->quantity }}">
                     </td>
                     <td>
-                        <input type="number" name="buying_price[]" class="form-control price" step="0.01" min="0" required
-                            value="{{ $oldPrices[$index] ?? '' }}">
+                        <input type="number" name="buying_price[]" class="form-control price" step="0.01" min="0" required value="{{ old('buying_price')[$index] ?? $purchase->items[$index]->buying_price }}">
                     </td>
                     <td><input type="text" class="form-control subtotal" readonly></td>
                     <td><button type="button" class="btn btn-danger remove-row">❌</button></td>
@@ -108,17 +98,14 @@
         <div class="row">
             <div class="col-md-4">
                 <label>Paid Amount</label>
-                <input type="number" name="paid_amount" class="form-control" step="0.01" min="0" required 
-                    value="{{ old('paid_amount', $purchase->paid_amount) }}">
-
-                    @error('paid_amount')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
+                <input type="number" name="paid_amount" class="form-control" step="0.01" min="0" required value="{{ old('paid_amount', $purchase->paid_amount) }}">
+                @error('paid_amount')
+                    <div class="text-danger">{{ $message }}</div>
+                @enderror
             </div>
             <div class="col-md-4">
                 <label>Due Amount</label>
-                <input type="number" name="due_amount" class="form-control" step="0.01" min="0" readonly
-                    value="{{ old('due_amount', max(0, $purchase->total_amount - $purchase->paid_amount)) }}">
+                <input type="number" name="due_amount" class="form-control" step="0.01" min="0" readonly value="{{ old('due_amount', $purchase->due_amount) }}">
             </div>
             <div class="col-md-4">
                 <label>Notes (optional)</label>
@@ -144,8 +131,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.querySelectorAll('.product-select').forEach(select => {
             const currentValue = select.value;
-            select.querySelectorAll('option').forEach(option => option.disabled = false);
-
+            select.querySelectorAll('option').forEach(option => {
+                option.disabled = false;
+            });
             select.querySelectorAll('option').forEach(option => {
                 if (option.value !== '' && option.value !== currentValue && selectedProducts.includes(option.value)) {
                     option.disabled = true;
@@ -242,7 +230,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updateItemCount();
     updateProductOptions();
 
-
     const accountSelect = document.getElementById('account_id');
     const balanceText = document.getElementById('account_balance_text');
     const paidInput = document.querySelector('input[name="paid_amount"]');
@@ -252,7 +239,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const balance = selectedOption ? parseFloat(selectedOption.getAttribute('data-balance')) || 0 : 0;
         balanceText.textContent = `Available Balance: ${balance.toFixed(2)}`;
 
-        // If paid amount exceeds balance, add error styling
         if (parseFloat(paidInput.value) > balance) {
             paidInput.classList.add('is-invalid');
         } else {
@@ -263,9 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
     accountSelect.addEventListener('change', updateAccountBalanceDisplay);
     paidInput.addEventListener('input', updateAccountBalanceDisplay);
 
-    // Initialize balance display on page load
     updateAccountBalanceDisplay();
-
 });
 </script>
 @endpush

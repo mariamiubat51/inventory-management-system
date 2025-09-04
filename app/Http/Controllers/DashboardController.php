@@ -51,7 +51,13 @@ class DashboardController extends Controller
         $totalDue = Sale::whereBetween('sale_date', [$from_date, $to_date])
             ->sum(DB::raw('grand_total - paid_amount'));
         $totalPurchases = Purchase::whereBetween('purchase_date', [$from_date, $to_date])->sum('total_amount'); // check column name
-        $totalProfit = $totalSales - $totalPurchases;
+
+        $totalProfit = Sale::join('sale_items', 'sales.id', '=', 'sale_items.sale_id')
+            ->join('products', 'products.id', '=', 'sale_items.product_id')
+            ->whereBetween('sales.sale_date', [$from_date, $to_date])
+            ->select(DB::raw('SUM((sale_items.quantity * sale_items.selling_price) - (sale_items.quantity * products.buying_price)) as profit'))
+            ->value('profit');
+
         $lowStockAlert = Setting::first()->low_stock_alert ?? 5;
         $lowStockCount = Product::where('stock_quantity', '<=', $lowStockAlert)->count();
 
