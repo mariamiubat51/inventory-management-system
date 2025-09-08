@@ -22,7 +22,7 @@
                 <td>{{ $cash->id }}</td>
                 <td>{{ $cash->date }}</td>
                 <td>{{ $cash->opening_amount }}</td>
-                <td>{{ $cash->closing_amount }}</td>
+                <td>{{ $cash->closing_amount ?? '0.00' }}</td>
                 <td>{{ $cash->status }}</td>
                 <td>{{ $cash->total_sales }}</td>
                 <td>{{ $cash->notes }}</td>

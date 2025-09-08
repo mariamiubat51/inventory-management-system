@@ -135,15 +135,16 @@ $todayRegister = CashRegister::where('date', now()->toDateString())->first();
 
                 {{-- Open/Close forms --}}
                 @if(!$todayRegister || $todayRegister->status == 'closed')
+                    {{-- Show Open Register form --}}
                     <form action="{{ route('cashregister.open') }}" method="POST" class="d-flex gap-2 align-items-center">
                         @csrf
                         <input type="number" step="0.01" name="opening_amount" placeholder="Opening Amount" class="form-control" required>
                         <button type="submit" class="btn btn-success">Open Register</button>
                     </form>
                 @elseif($todayRegister && $todayRegister->status == 'open')
+                    {{-- Show Close Register form --}}
                     <form action="{{ route('cashregister.close') }}" method="POST" class="d-flex gap-2 align-items-center">
                         @csrf
-                        <input type="number" step="0.01" name="closing_amount" placeholder="Closing Amount" class="form-control">
                         <input type="text" name="notes" placeholder="Notes" class="form-control">
                         <button type="submit" class="btn btn-danger">Close Register</button>
                     </form>

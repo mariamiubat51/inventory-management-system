@@ -4,31 +4,46 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\ProductCategory;
+use App\Models\ProductUnit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-
 
 class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::latest()->simplePaginate(15);
+        // Get products with their category and unit using eager loading
+        $products = Product::latest()
+            ->with(['category', 'unit']) // Eager load category and unit
+            ->simplePaginate(15); // Pagination
+
         return view('products.index', compact('products'));
     }
 
+
     public function create()
-    {
-        return view('products.create');
-    }
+{
+    $categories = ProductCategory::where('is_active', true)->get();
+    $units = ProductUnit::where('is_active', true)->get(); // fetch all units
+    $settings = \App\Models\Setting::first();
+    $default_unit_id = $settings->default_unit_id ?? null; // get default unit from settings
+
+    return view('products.create', compact('categories', 'units', 'default_unit_id'));
+}
+
 
     public function store(Request $request)
     {
+        // Validate inputs, including category_id and unit_id
         $request->validate([
             'name' => 'required',
             'description' => 'nullable|string',
-            'buying_price' => 'required|numeric|min:0',            
+            'buying_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
+            'category_id' => 'required|exists:product_categories,id', // Validate category
+            'unit_id' => 'required|exists:product_units,id', // Validate unit
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -38,25 +53,26 @@ class ProductController extends Controller
         $data = $request->only([
             'name',
             'description',
-            'buying_price',                                    
+            'buying_price',
             'selling_price',
             'stock_quantity',
+            'category_id',  // Add category_id
+            'unit_id',      // Add unit_id
         ]);
 
         $data['product_code'] = $productCode;
-
-        //  Auto-generate unique barcode
+        // Auto-generate unique barcode
         $data['barcode'] = 'BC-' . strtoupper(uniqid());
 
-        //  Handle Image Upload
+        // Handle Image Upload
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
-        //  Save Product
+        // Save Product
         $product = Product::create($data);
 
-        //  Add Stock Movement
+        // Add Stock Movement
         StockMovement::create([
             'product_id' => $product->id,
             'movement_type' => 'in', // stock coming in
@@ -72,17 +88,25 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        return view('products.edit', compact('product'));
+        $categories = ProductCategory::where('is_active', true)->get();
+        $units = ProductUnit::all(); // <- Fetch units
+        $settings = \App\Models\Setting::first();
+        $default_unit_id = $product->unit_id ?? $settings->default_unit_id ?? null;
+
+        return view('products.edit', compact('product', 'categories', 'units', 'default_unit_id'));
     }
 
     public function update(Request $request, Product $product)
     {
+        // Validate inputs, including category_id and unit_id
         $request->validate([
             'name' => 'required',
             'description' => 'nullable|string',
             'buying_price' => 'required|numeric|min:0',
             'selling_price' => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
+            'category_id' => 'required|exists:product_categories,id', // Validate category
+            'unit_id' => 'required|exists:product_units,id', // Validate unit
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -92,12 +116,12 @@ class ProductController extends Controller
             'buying_price',
             'selling_price',
             'stock_quantity',
+            'category_id',  // Add category_id
+            'unit_id',      // Add unit_id
         ]);
 
         // Image Upload
         if ($request->hasFile('image')) {
-
-            
             // Delete the old image
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
@@ -107,6 +131,7 @@ class ProductController extends Controller
 
         $product->update($data);
 
+        // If stock quantity is updated, create a stock movement
         if ($product->wasChanged('stock_quantity')) {
             $oldQty = $product->getOriginal('stock_quantity');
             $newQty = $product->stock_quantity;
@@ -128,12 +153,12 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-    // Delete the image first
-    if ($product->image) {
-        Storage::disk('public')->delete($product->image);
-    }
+        // Delete the image first
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
 
-    $product->delete();
-    return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        $product->delete();
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 }

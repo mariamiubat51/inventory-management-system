@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductUnitController;
+use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\PurchaseController;
@@ -21,14 +23,20 @@ use App\Http\Controllers\SettingController;
 
 
 
-
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
 
-// Products
+// Products Unit & Category
+Route::prefix('products')->name('products.')->group(function () {
+    Route::resource('units', ProductUnitController::class)->only(['index','store','update','destroy']);
+    Route::resource('categories', ProductCategoryController::class)->only(['index','store','update','destroy']);
+});
+//Products
 Route::resource('products', ProductController::class);
+
+
 
 // Suppliers
 Route::resource('suppliers', SupplierController::class);

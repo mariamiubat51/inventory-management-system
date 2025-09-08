@@ -25,6 +25,32 @@
     </div>
 
     <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select name="category_id" id="category" class="form-select" required>
+            <option value="">-- Select Category --</option>
+            @foreach($categories as $category)
+                <option value="{{ $category->id }}" 
+                    {{ $product->category_id == $category->id ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="unit" class="form-label">Unit</label>
+        <select name="unit_id" id="unit" class="form-select" required>
+            <option value="">-- Select Unit --</option>
+            @foreach($units as $unit)
+                <option value="{{ $unit->id }}"
+                    {{ (old('unit_id', $default_unit_id ?? '') == $unit->id) ? 'selected' : '' }}>
+                    {{ $unit->name }} ({{ $unit->symbol }})
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="mb-3">
       <label class="form-label">Description</label>
       <textarea name="description" class="form-control">{{ $product->description }}</textarea>
     </div>

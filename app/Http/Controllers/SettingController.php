@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Models\ProductUnit;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
@@ -10,10 +11,13 @@ class SettingController extends Controller
     // Show settings form
     public function index()
     {
-        // Always take the first row (id = 1) or create default if not exist
+        // Take first row or create default
         $setting = Setting::firstOrCreate(['id' => 1]);
 
-        return view('settings.index', compact('setting'));
+        // Fetch all units from product_units table
+        $units = ProductUnit::all();
+
+        return view('settings.index', compact('setting', 'units'));
     }
 
     // Save/Update settings

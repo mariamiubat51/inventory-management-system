@@ -76,7 +76,13 @@
                 </div>
                 <div class="mb-3">
                     <label>Default Unit</label>
-                    <input type="text" name="default_unit" class="form-control" value="{{ $setting->default_unit ?? '' }}">
+                    <select name="default_unit" class="form-select">
+                        @foreach($units as $unit)
+                            <option value="{{ $unit->name }}" {{ ($setting->default_unit ?? '') == $unit->name ? 'selected' : '' }}>
+                                {{ $unit->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 

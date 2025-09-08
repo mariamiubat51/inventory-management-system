@@ -27,6 +27,8 @@
         <th>Image</th>
         <th>Name</th>
         <th>Barcode</th>
+        <th>Category</th>  <!-- New Column for Category -->
+        <th>Unit</th>      <!-- New Column for Unit -->
         <th>Description</th>
         <th>Buying Price (৳)</th>
         <th>Selling Price (৳)</th>
@@ -61,6 +63,10 @@
             @endif
         </td>
 
+        {{-- Display Category and Unit --}}
+        <td>{{ $product->category->name ?? 'N/A' }}</td>  <!-- Display Category -->
+        <td>{{ $product->unit->name ?? 'N/A' }}</td>      <!-- Display Unit -->
+
         <td>{{ $product->description }}</td>
         <td>{{ $product->buying_price }}</td>
         <td>{{ $product->selling_price }}</td>
@@ -78,7 +84,7 @@
       </tr>
       @empty
       <tr>
-        <td colspan="10" class="text-center">No products found.</td>
+        <td colspan="12" class="text-center">No products found.</td>
       </tr>
       @endforelse
     </tbody>

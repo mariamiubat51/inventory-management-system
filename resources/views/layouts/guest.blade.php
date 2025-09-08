@@ -17,7 +17,7 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100" style="background: linear-gradient(135deg, #87ceeb, #a9a9a9, #2f4f4f);">
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100" style="background: linear-gradient(135deg, #4289cbff, #73bdcbff, #b8cfd4ff);">
             <div class=" shadow-lg" style="min-height: 400px;">
                 <div class="row g-0" style="height: 100%;">
                     <!-- Left Side: Image -->

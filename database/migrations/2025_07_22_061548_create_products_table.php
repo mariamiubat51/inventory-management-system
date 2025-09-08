@@ -13,10 +13,10 @@ return new class extends Migration
             $table->string('product_code')->unique();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->decimal('buying_price', 15, 2);           // renamed to price
+            $table->decimal('buying_price', 15, 2);          
             $table->decimal('selling_price', 10, 2);
             $table->integer('stock_quantity')->default(0);
-            $table->string('image')->nullable();        // added image column, nullable
+            $table->string('image')->nullable();        
             $table->timestamps();
         });
     }
