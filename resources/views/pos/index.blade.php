@@ -116,32 +116,32 @@ $todayRegister = CashRegister::where('date', now()->toDateString())->first();
 
         <div class="col-md-4">
             <div class="mb-3 border p-3 rounded shadow 
-                @if(!$todayRegister || $todayRegister->status == 'closed') bg-success-subtle
-                @elseif($todayRegister && $todayRegister->status == 'open') bg-danger-subtle
+                @if(!$openRegister) bg-success-subtle
+                @elseif($openRegister) bg-danger-subtle
                 @endif">
 
-                {{-- Show today’s register info --}}
-                @if($todayRegister)
+                {{-- Show open register info --}}
+                @if($openRegister)
                     <p>
-                        Today’s Register: <strong>{{ ucfirst($todayRegister->status) }}</strong> <br>
-                        Opening: {{ $todayRegister->opening_amount }} | 
-                        Total Sales: {{ \App\Models\Sale::whereDate('created_at', $todayRegister->date)->sum('grand_total') }}
+                        Register Status: <strong>{{ ucfirst($openRegister->status) }}</strong> <br>
+                        Opening: {{ $openRegister->opening_amount }} | 
+                        Total Sales: {{ \App\Models\Sale::whereDate('created_at', $openRegister->date)->sum('grand_total') }}
 
-                        @if($todayRegister->status == 'closed')
-                            | Closing: {{ $todayRegister->closing_amount }}
+                        @if($openRegister->status == 'closed')
+                            | Closing: {{ $openRegister->closing_amount }}
                         @endif
                     </p>
                 @endif
 
                 {{-- Open/Close forms --}}
-                @if(!$todayRegister || $todayRegister->status == 'closed')
+                @if(!$todayRegister && !$openRegister)
                     {{-- Show Open Register form --}}
                     <form action="{{ route('cashregister.open') }}" method="POST" class="d-flex gap-2 align-items-center">
                         @csrf
                         <input type="number" step="0.01" name="opening_amount" placeholder="Opening Amount" class="form-control" required>
                         <button type="submit" class="btn btn-success">Open Register</button>
                     </form>
-                @elseif($todayRegister && $todayRegister->status == 'open')
+                @elseif($openRegister && $openRegister->status == 'open')
                     {{-- Show Close Register form --}}
                     <form action="{{ route('cashregister.close') }}" method="POST" class="d-flex gap-2 align-items-center">
                         @csrf

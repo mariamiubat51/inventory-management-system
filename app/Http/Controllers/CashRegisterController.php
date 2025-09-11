@@ -19,15 +19,13 @@ class CashRegisterController extends Controller
         }
 
         // Get today's register if it exists
-        $todayRegister = CashRegister::where('date', now()->toDateString())->first();
+        $todayRegister = CashRegister::whereDate('date', now()->toDateString())->first();
         if ($todayRegister) {
             $todayRegister->total_sales = Sale::whereDate('created_at', $todayRegister->date)->sum('grand_total');
         }
 
-        // Open register should only be today
-        $openRegister = CashRegister::where('date', now()->toDateString())
-                                    ->where('status', 'open')
-                                    ->first();
+        // Get the last open register (even if not today)
+        $openRegister = CashRegister::where('status', 'open')->orderBy('date', 'desc')->first();
 
         return view('cashregister.index', compact('cashRegisters', 'todayRegister', 'openRegister'));
     }
@@ -41,24 +39,11 @@ class CashRegisterController extends Controller
 
         $today = now()->toDateString();
 
-        // Check if today's register already exists
-        $existing = CashRegister::where('date', $today)->first();
+        // Check if any register is still open
+        $existing = CashRegister::where('status', 'open')->first();
         if ($existing) {
-            return back()->with('error', 'Register already opened for today.');
+            return back()->with('error', 'You must close the previous register before opening a new one.');
         }
-
-        // Automatically close all previous open registers
-        CashRegister::where('date', '<', $today)
-            ->where('status', 'open')
-            ->get()
-            ->each(function($register){
-                $totalSales = Sale::whereDate('created_at', $register->date)->sum('grand_total');
-                $register->update([
-                    'total_sales' => $totalSales,
-                    'closing_amount' => $register->opening_amount + $totalSales,
-                    'status' => 'closed',
-                ]);
-            });
 
         // Open today's register
         CashRegister::create([
@@ -73,9 +58,7 @@ class CashRegisterController extends Controller
     public function closeRegister(Request $request)
     {
         $today = now()->toDateString();
-        $register = CashRegister::where('date', $today)
-            ->where('status', 'open')
-            ->first();
+        $register = CashRegister::where('status', 'open')->latest()->first();
 
         if (!$register) {
             return back()->with('error', 'No open register found.');

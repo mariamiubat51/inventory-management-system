@@ -28,6 +28,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
 
+
 // Products Unit & Category
 Route::prefix('products')->name('products.')->group(function () {
     Route::resource('units', ProductUnitController::class)->only(['index','store','update','destroy']);
@@ -35,7 +36,6 @@ Route::prefix('products')->name('products.')->group(function () {
 });
 //Products
 Route::resource('products', ProductController::class);
-
 
 
 // Suppliers
@@ -68,6 +68,7 @@ Route::resource('expenses', ExpenseController::class);
 // Expense Categories
 Route::resource('expense-categories', ExpenseCategoryController::class);
 
+
 // POS
 Route::middleware(['auth'])->group(function() {
     Route::get('/pos', [POSController::class, 'index'])->name('pos.index');
@@ -76,15 +77,13 @@ Route::middleware(['auth'])->group(function() {
     Route::post('/pos/register/open', [CashRegisterController::class, 'openRegister'])->name('cashregister.open');
     Route::post('/pos/register/close', [CashRegisterController::class, 'closeRegister'])->name('cashregister.close');
 });
-
-
 // CashRegister
+Route::get('/cashregister', [CashRegisterController::class, 'index'])->name('cashregister.index');
 Route::post('/cashregister/open', [CashRegisterController::class, 'openRegister'])->name('cashregister.open');
 Route::post('/cashregister/close', [CashRegisterController::class, 'closeRegister'])->name('cashregister.close');
 
 
 // Optional: route to view all registers
-Route::get('/cashregister', [CashRegisterController::class, 'index'])->name('cashregister.index');
 //Route::get('/cash-register/open', [CashRegisterController::class, 'open'])->name('cash-register.open');
 //Route::post('/cash-register/store', [CashRegisterController::class, 'store'])->name('cash-register.store');
 //Route::post('/cash-register/close/{register}', [CashRegisterController::class, 'close'])->name('cash-register.close');

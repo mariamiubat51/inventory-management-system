@@ -27,8 +27,8 @@
         <th>Image</th>
         <th>Name</th>
         <th>Barcode</th>
-        <th>Category</th>  <!-- New Column for Category -->
-        <th>Unit</th>      <!-- New Column for Unit -->
+        <th>Category</th> 
+        <th>Unit</th>     
         <th>Description</th>
         <th>Buying Price (৳)</th>
         <th>Selling Price (৳)</th>
@@ -64,8 +64,8 @@
         </td>
 
         {{-- Display Category and Unit --}}
-        <td>{{ $product->category->name ?? 'N/A' }}</td>  <!-- Display Category -->
-        <td>{{ $product->unit->name ?? 'N/A' }}</td>      <!-- Display Unit -->
+        <td>{{ $product->category->name ?? 'N/A' }}</td>  
+        <td>{{ $product->unit->name ?? 'N/A' }}</td>      
 
         <td>{{ $product->description }}</td>
         <td>{{ $product->buying_price }}</td>

@@ -19,10 +19,10 @@
         </div>
     @endif
 
-    <table class="table table-bordered table-hover align-middle">
+    <table class="table table-bordered table-hover align-middle table-striped text-center">
         <thead class="table-dark">
             <tr>
-                <th>#</th>
+                <th>ID</th>
                 <th>Name</th>
                 <th>Symbol</th>
                 <th>Status</th>

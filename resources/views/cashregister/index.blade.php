@@ -4,8 +4,8 @@
 <div class="container">
     <h1>Cash Register</h1>
 
-    <table class="table table-bordered">
-        <thead>
+    <table class="table table-bordered table-hover align-middle table-striped text-center">
+        <thead class="table-dark">
             <tr>
                 <th>ID</th>
                 <th>Date</th>

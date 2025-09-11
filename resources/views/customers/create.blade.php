@@ -2,7 +2,9 @@
 
 @section('content')
 <div class="container">
-    <h2>Add Customer</h2>
+    <div class="row">
+        <div class="p-3 col-6 ">
+                <h2>Add Customer</h2>
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -39,5 +41,7 @@
         <button class="btn btn-success">Save</button>
         <a href="{{ route('customers.index') }}" class="btn btn-secondary">Back</a>
     </form>
+        </div>
+    </div>
 </div>
 @endsection
