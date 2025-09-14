@@ -249,7 +249,7 @@ class ReportController extends Controller
     {
         // Default date range: current month
         $from_date = $request->from_date ?? \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
-        $to_date   = $request->to_date ?? \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
+        $to_date   = $request->to_date ?? \Carbon\Carbon::now()->format('Y-m-d');
 
         // Get all expense categories for the dropdown
         $categories = \App\Models\ExpenseCategory::all();
