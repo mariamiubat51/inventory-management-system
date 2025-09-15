@@ -11,16 +11,38 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Get products with their category and unit using eager loading
-        $products = Product::latest()
-            ->with(['category', 'unit']) // Eager load category and unit
-            ->simplePaginate(15); // Pagination
+        // Validation for the 'from_date' and 'to_date' to ensure the 'to_date' is not before the 'from_date'
+        $request->validate([
+            'to_date' => 'nullable|after_or_equal:from_date',
+        ], [
+            'to_date.after_or_equal' => 'The "To Date" must be greater than or equal to the "From Date".',
+        ]);
+
+        // Start the query with eager loading for category and unit
+        $query = Product::latest()->with(['category', 'unit']);
+
+        // Filter by product name if provided
+        if ($request->filled('product_name')) {
+            $query->where('name', 'like', '%' . $request->product_name . '%');
+        }
+
+        // Filter by 'from_date' if provided
+        if ($request->filled('from_date')) {
+            $query->where('created_at', '>=', $request->from_date);
+        }
+
+        // Filter by 'to_date' if provided
+        if ($request->filled('to_date')) {
+            $query->where('created_at', '<=', $request->to_date);
+        }
+
+        // Get filtered products with pagination
+        $products = $query->simplePaginate(15);
 
         return view('products.index', compact('products'));
     }
-
 
     public function create()
 {

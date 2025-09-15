@@ -240,25 +240,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     barcodeInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            const barcode = e.target.value.trim();
-            if (barcode !== '') {
-                fetch(`/pos/get-product/${barcode}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.success) addProductToCart(data.product);
-                        else alert('Product not found!');
-                    })
-                    .catch(err => console.error(err));
-            }
-            e.target.value = '';
-            setTimeout(() => barcodeInput.focus(), 50); // Refocus for next scan
+            requireRegisterOpen(() => {
+                const barcode = e.target.value.trim();
+                if (barcode !== '') {
+                    fetch(`/pos/get-product/${barcode}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if(data.success) addProductToCart(data.product);
+                            else alert('Product not found!');
+                        });
+                }
+                e.target.value = '';
+            });
         }
     });
 
     customerSelect.addEventListener('change', function () {
-        if (this.value === 'walkin') {
-            walkInModal.show();
-        }
+        requireRegisterOpen(() => {
+            if (this.value === 'walkin') {
+                walkInModal.show();
+            }
+        });
     });
 
     document.getElementById('saveWalkinBtn').addEventListener('click', function () {
@@ -285,6 +287,16 @@ document.addEventListener('DOMContentLoaded', function () {
             card.style.display = card.dataset.name.toLowerCase().includes(query) ? '' : 'none';
         });
     });
+
+    //cash register
+    const registerOpen = {{ $registerOpen ? 'true' : 'false' }};
+    function requireRegisterOpen(callback) {
+        if (!registerOpen) {
+            alert("Cash register is not open for today. Please open it first.");
+            return false;
+        }
+        callback();
+    }
 
     // ---- STEP 2: Add Product to Cart Function ----
     function addProductToCart(product) {
@@ -369,13 +381,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // ---- HANDLE CART EVENTS ----
     document.addEventListener('click', function(e) {
         // Add product from card
-        if (e.target.classList.contains('add-to-cart')) {
-            const id = e.target.dataset.id;
-            const stock = parseInt(e.target.dataset.stock);
-            const name = e.target.dataset.name;
-            const price = parseFloat(e.target.dataset.price);
-            addProductToCart({ id, name, selling_price: price, stock_quantity: stock, barcode: e.target.dataset.barcode });
-        }
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('add-to-cart')) {
+                requireRegisterOpen(() => {
+                    const id = e.target.dataset.id;
+                    const stock = parseInt(e.target.dataset.stock);
+                    const name = e.target.dataset.name;
+                    const price = parseFloat(e.target.dataset.price);
+                    addProductToCart({ id, name, selling_price: price, stock_quantity: stock, barcode: e.target.dataset.barcode });
+                });
+            }
+        });
 
         // Remove item
         if (e.target.classList.contains('remove-item')) {
@@ -419,47 +435,49 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ---- COMPLETE SALE ----
     document.getElementById('complete-sale').addEventListener('click', function () {
-        if (cart.length === 0) { alert('Cart is empty.'); return; }
-        const customerId = document.getElementById('customer').value;
-        if (!customerId) { alert('Please select a customer.'); return; }
+        requireRegisterOpen(() => {
+            if (cart.length === 0) { alert('Cart is empty.'); return; }
+            const customerId = document.getElementById('customer').value;
+            if (!customerId) { alert('Please select a customer.'); return; }
 
-        const saleData = {
-            customer_id: customerId,
-            items: cart,
-            discount_value: parseFloat(document.getElementById('discount_value').value) || 0,
-            discount_type: document.getElementById('discount_type').value,
-            paid_amount: parseFloat(document.getElementById('paid_amount').value) || 0,
-            payment_method: document.getElementById('payment_method').value,
-            account_id: document.getElementById('account_id').value,
-        };
+            const saleData = {
+                customer_id: customerId,
+                items: cart,
+                discount_value: parseFloat(document.getElementById('discount_value').value) || 0,
+                discount_type: document.getElementById('discount_type').value,
+                paid_amount: parseFloat(document.getElementById('paid_amount').value) || 0,
+                payment_method: document.getElementById('payment_method').value,
+                account_id: document.getElementById('account_id').value,
+            };
 
-        if (customerId === 'walkin') {
-            saleData.walkin_name = document.getElementById('walkin_name_hidden').value;
-            saleData.walkin_email = document.getElementById('walkin_email_hidden').value;
-            saleData.walkin_phone = document.getElementById('walkin_phone_hidden').value;
-            saleData.walkin_address = document.getElementById('walkin_address_hidden').value;
-            if (!saleData.walkin_name) { alert('Walk-in customer name is required.'); return; }
-        }
+            if (customerId === 'walkin') {
+                saleData.walkin_name = document.getElementById('walkin_name_hidden').value;
+                saleData.walkin_email = document.getElementById('walkin_email_hidden').value;
+                saleData.walkin_phone = document.getElementById('walkin_phone_hidden').value;
+                saleData.walkin_address = document.getElementById('walkin_address_hidden').value;
+                if (!saleData.walkin_name) { alert('Walk-in customer name is required.'); return; }
+            }
 
-        const completeBtn = this;
-        completeBtn.disabled = true;
-        completeBtn.innerText = 'Processing...';
+            const completeBtn = this;
+            completeBtn.disabled = true;
+            completeBtn.innerText = 'Processing...';
 
-        fetch('{{ route('pos.store') }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-            body: JSON.stringify(saleData)
-        })
-        .then(response => { if (!response.ok) { return response.json().then(err => { throw err; }); } return response.json(); })
-        .then(data => { alert(data.message); window.location.reload(); })
-        .catch(error => {
-            console.error('Error:', error);
-            let errorMessage = "An unknown error occurred.";
-            if (error.message) { errorMessage = error.message; }
-            else if (error.errors) { errorMessage = Object.values(error.errors).flat().join('\n'); }
-            alert('Sale Failed:\n' + errorMessage);
-        })
-        .finally(() => { completeBtn.disabled = false; completeBtn.innerText = 'Complete Sale'; });
+            fetch('{{ route('pos.store') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                body: JSON.stringify(saleData)
+            })
+            .then(response => { if (!response.ok) { return response.json().then(err => { throw err; }); } return response.json(); })
+            .then(data => { alert(data.message); window.location.reload(); })
+            .catch(error => {
+                console.error('Error:', error);
+                let errorMessage = "An unknown error occurred.";
+                if (error.message) { errorMessage = error.message; }
+                else if (error.errors) { errorMessage = Object.values(error.errors).flat().join('\n'); }
+                alert('Sale Failed:\n' + errorMessage);
+            })
+            .finally(() => { completeBtn.disabled = false; completeBtn.innerText = 'Complete Sale'; });
+        });
     });
 
     // ---- BARCODE SCANNING ----

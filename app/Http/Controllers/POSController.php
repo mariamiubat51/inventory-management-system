@@ -25,10 +25,11 @@ class POSController extends Controller
         $customers = User::where('role', 'customer')->get();
         $accounts = Account::all();
 
-        // any open register (even from previous day)
-        $openRegister = CashRegister::where('status', 'open')->latest()->first();
+        $today = now()->toDateString();
+        $openRegister = CashRegister::where('date', now()->toDateString())->first();
+        $registerOpen = $openRegister && $openRegister->status === 'open' ? true : false;
 
-        return view('pos.index', compact('products', 'customers', 'accounts', 'openRegister'));
+        return view('pos.index', compact('products', 'customers', 'accounts', 'openRegister', 'registerOpen'));
     }
 
     public function store(Request $request)

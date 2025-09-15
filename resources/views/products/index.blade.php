@@ -8,10 +8,53 @@
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">Product List</h2>
-    <a href="{{ route('products.create') }}" class="btn btn-primary">
-      <i class="fas fa-plus"></i> Add New Product
-    </a>
   </div>
+
+  <form method="GET" action="{{ route('products.index') }}" class="mb-3">
+      <div class="row">
+          <!-- Product Name Filter -->
+          <div class="col-md-3">
+              <label for="product_name">Product Name</label>
+              <input type="text" name="product_name" class="form-control" value="{{ request('product_name') }}">
+          </div>
+
+          <!-- From Date Filter -->
+          <div class="col-md-3">
+              <label for="from_date">From Date</label>
+              <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}">
+          </div>
+
+          <!-- To Date Filter -->
+          <div class="col-md-3">
+              <label for="to_date">To Date</label>
+              <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
+          </div>
+
+          <!-- Search and Reset Buttons -->
+          <div class="col-md-3 d-flex align-items-end">
+              <!-- Search Button -->
+              <button type="submit" class="btn btn-info mr-2 m-1">Search</button>
+
+              <!-- Reset Button -->
+              <a href="{{ route('products.index') }}" class="btn btn-secondary m-1">Reset</a>
+          </div>
+      </div>
+
+      <!-- Display Validation Errors -->
+      @if ($errors->any())
+          <div class="alert alert-danger mt-3">
+              <ul>
+                  @foreach ($errors->all() as $error)
+                      <li>{{ $error }}</li>
+                  @endforeach
+              </ul>
+          </div>
+      @endif
+  </form>
+
+  <a href="{{ route('products.create') }}" class="btn btn-primary mb-3">
+    <i class="fas fa-plus"></i> Add New Product
+  </a>
 
   @if(session('success'))
     <div class="alert alert-success">

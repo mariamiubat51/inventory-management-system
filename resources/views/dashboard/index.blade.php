@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <!-- Left: Dashboard Title -->
         <div class="d-flex align-items-center gap-3">
-            <h2 class="fw-bold mb-0">Dashboard</h2>
+            <h2 class="fw-bold">Dashboard ({{ \Carbon\Carbon::now()->format('F') }})</h2>
         </div>
 
         <!-- Right: Search + User Info + Logout -->

@@ -37,6 +37,7 @@
   </style>
 </head>
 <body>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <div class="sidebar d-flex flex-column">
     <h4 class="text-center pt-3">
       <img src="{{ asset('storage/storesyncLogo.png') }}" alt="StoreSync" style="height:50px;">

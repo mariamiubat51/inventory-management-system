@@ -9,9 +9,36 @@ use Auth;
 
 class StockMovementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $movements = StockMovement::with('product','user')->orderBy('created_at','desc')->simplePaginate(15);
+        // Validation for "to_date" not being before "from_date"
+        $request->validate([
+            'to_date' => 'nullable|after_or_equal:from_date', // Ensure to_date is not before from_date
+        ], [
+            'to_date.after_or_equal' => 'The "To Date" must be greater than or equal to the "From Date".',
+        ]);
+
+        // Start the query to get stock movements
+        $query = StockMovement::with('product', 'user')->orderBy('created_at', 'desc');
+
+        // Apply search filter if movement_type is selected
+        if ($request->filled('movement_type')) {
+            $query->where('movement_type', $request->movement_type);
+        }
+
+        // Apply "from_date" filter if provided
+        if ($request->filled('from_date')) {
+            $query->where('created_at', '>=', $request->from_date);
+        }
+
+        // Apply "to_date" filter if provided
+        if ($request->filled('to_date')) {
+            $query->where('created_at', '<=', $request->to_date);
+        }
+
+        // Fetch the stock movements with pagination
+        $movements = $query->simplePaginate(15);
+
         return view('stock_movements.index', compact('movements'));
     }
 
