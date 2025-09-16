@@ -100,11 +100,11 @@
             <!-- Search form -->
             <div class="col-6 ms-auto mb-3">
                 <form action="{{ route('dashboard') }}" method="GET" class="d-flex">
-                <input type="text" name="search" class="form-control form-control-sm rounded-pill" placeholder="Search...">
-                <button type="submit" class="btn btn-sm ms-2" style="background: transparent; border: none;">
-                    <i class="fas fa-search"></i>
-                </button>
-            </form>
+                    <input type="text" name="search" class="form-control form-control-sm rounded-pill" placeholder="Search..." autocomplete="off">
+                    <button type="submit" class="btn btn-sm ms-2" style="background: transparent; border: none;">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
             </div>
             <div class="card shadow-sm p-3 border-0 mb-4">
                 <h5 class="fw-bold mb-3">Recent Sales</h5>

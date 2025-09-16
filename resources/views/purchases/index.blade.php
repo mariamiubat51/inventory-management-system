@@ -4,6 +4,45 @@
 <div class="container">
     <h2 class="mb-4">Purchase List</h2>
 
+    <!-- Display Validation Errors -->
+    @if ($errors->any())
+        <div class="alert alert-danger mt-3">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+  <form method="GET" action="{{ route('purchases.index') }}" class="mb-3">
+        <div class="row">
+            <!-- Supplier Name -->
+            <div class="col-md-3">
+                <label for="supplier_name">Supplier Name</label>
+                <input type="text" name="supplier_name" class="form-control" value="{{ request('supplier_name') }}" autocomplete="off">
+            </div>
+
+            <!-- From Date -->
+            <div class="col-md-3">
+                <label for="from_date">From Date</label>
+                <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}">
+            </div>
+
+            <!-- To Date -->
+            <div class="col-md-3">
+                <label for="to_date">To Date</label>
+                <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
+            </div>
+
+            <!-- Buttons -->
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-info m-1">Search</button>
+                <a href="{{ route('purchases.index') }}" class="btn btn-secondary m-1">Reset</a>
+            </div>
+        </div>
+    </form>
+
     <a href="{{ route('purchases.create') }}" class="btn text-white mb-3" style="background-color: rgba(51, 106, 202, 1);">
         ➕ Add Purchase
     </a>

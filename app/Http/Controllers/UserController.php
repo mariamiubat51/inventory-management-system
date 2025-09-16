@@ -9,11 +9,20 @@ use Illuminate\Support\Facades\Hash;
 class UserController extends Controller
 {
     // Show all users
-    public function index()
-    {
-        $users = User::latest()->simplePaginate(15);
-        return view('users.index', compact('users'));
+    public function index(Request $request)
+{
+    $query = User::latest();
+
+    // Filter by role
+    if ($request->filled('role')) {
+        $query->where('role', $request->role);
     }
+
+    $users = $query->simplePaginate(15)->appends($request->all());
+
+    return view('users.index', compact('users'));
+}
+
 
     // Show form to create new user
     public function create()

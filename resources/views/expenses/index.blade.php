@@ -4,6 +4,49 @@
 <div class="container">
     <h2>Expense List</h2>
 
+    <!-- Display Validation Errors -->
+@if ($errors->any())
+    <div class="alert alert-danger mt-3">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<form method="GET" action="{{ route('expenses.index') }}" class="mb-3">
+    <div class="row">
+        <!-- Category Search -->
+        <div class="col-md-3">
+            <label for="category_name">Category</label>
+            <input type="text" name="category_name" class="form-control"
+                   value="{{ request('category_name') }}" autocomplete="off">
+        </div>
+
+        <!-- From Date -->
+        <div class="col-md-3">
+            <label for="from_date">From Date</label>
+            <input type="date" name="from_date" class="form-control"
+                   value="{{ request('from_date') }}">
+        </div>
+
+        <!-- To Date -->
+        <div class="col-md-3">
+            <label for="to_date">To Date</label>
+            <input type="date" name="to_date" class="form-control"
+                   value="{{ request('to_date') }}">
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-info m-1">Search</button>
+            <a href="{{ route('expenses.index') }}" class="btn btn-secondary m-1">Reset</a>
+        </div>
+    </div>
+</form>
+
+
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif

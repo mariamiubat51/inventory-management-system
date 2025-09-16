@@ -50,9 +50,10 @@
             <a href="{{ route('login') }}" class="btn btn-primary btn-custom">
                 <i class="bi bi-box-arrow-in-right me-2"></i> Login
             </a>
-            <a href="{{ route('register') }}" class="btn btn-outline-info btn-custom">
+            <!-- comment the register page -->
+            {{-- <a href="{{ route('register') }}" class="btn btn-outline-info btn-custom">
                 <i class="bi bi-person-plus me-2"></i> Register
-            </a>
+            </a> --}}
         </div>
 
         <!-- Footer -->

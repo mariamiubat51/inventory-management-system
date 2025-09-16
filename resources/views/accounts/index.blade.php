@@ -11,7 +11,7 @@
     {{-- Search Form --}}
     <form method="GET" action="{{ route('accounts.index') }}" class="row g-3 mb-3">
         <div class="col-md-4">
-            <input type="text" name="search" class="form-control" placeholder="Search by name or type" value="{{ request('search') }}">
+            <input type="text" name="search" class="form-control" placeholder="Search by name or type" value="{{ request('search') }}" autocomplete="off">
         </div>
         <div class="col-md-auto">
             <button type="submit" class="btn btn-primary">Search</button>

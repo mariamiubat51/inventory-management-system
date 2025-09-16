@@ -5,25 +5,26 @@ namespace App\Http\Controllers;
 use App\Models\StockMovement;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Auth;
 
 class StockMovementController extends Controller
 {
     public function index(Request $request)
     {
-        // Validation for "to_date" not being before "from_date"
-        $request->validate([
-            'to_date' => 'nullable|after_or_equal:from_date', // Ensure to_date is not before from_date
-        ], [
-            'to_date.after_or_equal' => 'The "To Date" must be greater than or equal to the "From Date".',
-        ]);
-
         // Start the query to get stock movements
         $query = StockMovement::with('product', 'user')->orderBy('created_at', 'desc');
 
         // Apply search filter if movement_type is selected
         if ($request->filled('movement_type')) {
             $query->where('movement_type', $request->movement_type);
+        }
+
+        // Handle invalid date range
+        if ($request->filled('from_date') && $request->filled('to_date') && $request->to_date < $request->from_date) {
+            $movements = new LengthAwarePaginator([], 0, 15);
+            return view('stock_movements.index', compact('movements'))
+                ->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
         }
 
         // Apply "from_date" filter if provided

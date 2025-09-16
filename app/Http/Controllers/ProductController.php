@@ -8,18 +8,13 @@ use App\Models\ProductCategory;
 use App\Models\ProductUnit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Pagination\LengthAwarePaginator;
+
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        // Validation for the 'from_date' and 'to_date' to ensure the 'to_date' is not before the 'from_date'
-        $request->validate([
-            'to_date' => 'nullable|after_or_equal:from_date',
-        ], [
-            'to_date.after_or_equal' => 'The "To Date" must be greater than or equal to the "From Date".',
-        ]);
-
         // Start the query with eager loading for category and unit
         $query = Product::latest()->with(['category', 'unit']);
 
@@ -28,14 +23,21 @@ class ProductController extends Controller
             $query->where('name', 'like', '%' . $request->product_name . '%');
         }
 
+        // Handle invalid date range
+        if ($request->filled('from_date') && $request->filled('to_date') && $request->to_date < $request->from_date) {
+            $products = new LengthAwarePaginator([], 0, 15);
+            return view('products.index', compact('products'))
+                ->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
+        }
+
         // Filter by 'from_date' if provided
         if ($request->filled('from_date')) {
-            $query->where('created_at', '>=', $request->from_date);
+            $query->whereDate('created_at', '>=', $request->from_date);
         }
 
         // Filter by 'to_date' if provided
         if ($request->filled('to_date')) {
-            $query->where('created_at', '<=', $request->to_date);
+            $query->whereDate('created_at', '<=', $request->to_date);
         }
 
         // Get filtered products with pagination

@@ -4,6 +4,24 @@
 <div class="container">
     <h2 class="mb-4">User List</h2>
 
+     <!-- Filter Form -->
+    <form method="GET" action="{{ route('users.index') }}" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="role" class="form-label">User Role</label>
+            <select name="role" id="role" class="form-control">
+                <option value="">-- All Roles --</option>
+                <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                <option value="manager" {{ request('role') == 'manager' ? 'selected' : '' }}>Manager</option>
+                <option value="accountant" {{ request('role') == 'accountant' ? 'selected' : '' }}>Accountant</option>
+                <option value="customer" {{ request('role') == 'customer' ? 'selected' : '' }}>Customer</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">Search</button>
+            <a href="{{ route('users.index') }}" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif

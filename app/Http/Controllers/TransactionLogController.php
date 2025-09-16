@@ -10,33 +10,42 @@ class TransactionLogController extends Controller
 {
     // List all transactions with pagination and optional filtering
     public function index(Request $request)
-    {
-        $query = TransactionLog::with('account')->orderBy('transaction_date', 'desc');
+{
+    $query = TransactionLog::with('account')->orderBy('transaction_date', 'desc');
 
-        // Filter by account_id
-        if ($request->filled('account_id')) {
-            $query->where('account_id', $request->account_id);
-        }
-
-        // Filter by transaction_type
-        if ($request->filled('transaction_type')) {
-            $query->where('transaction_type', $request->transaction_type);
-        }
-
-        // Filter by date range
-        if ($request->filled('date_from')) {
-            $query->where('transaction_date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->where('transaction_date', '<=', $request->date_to);
-        }
-
-        $transactions = $query->simplePaginate(15);
-
+    // Handle invalid date range first
+    if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {
+        // Return empty results and show error
+        $transactions = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         $accounts = Account::all();
-
-        return view('transaction_logs.index', compact('transactions', 'accounts'));
+        return view('transaction_logs.index', compact('transactions', 'accounts'))
+            ->withErrors(['date_to' => 'The "To Date" must be greater than or equal to the "From Date".']);
     }
+
+    // Filter by account_id
+    if ($request->filled('account_id')) {
+        $query->where('account_id', $request->account_id);
+    }
+
+    // Filter by transaction_type
+    if ($request->filled('transaction_type')) {
+        $query->where('transaction_type', $request->transaction_type);
+    }
+
+    // Filter by date range
+    if ($request->filled('date_from')) {
+        $query->where('transaction_date', '>=', $request->date_from);
+    }
+    if ($request->filled('date_to')) {
+        $query->where('transaction_date', '<=', $request->date_to);
+    }
+
+    $transactions = $query->simplePaginate(15);
+    $accounts = Account::all();
+
+    return view('transaction_logs.index', compact('transactions', 'accounts'));
+}
+
 
     // Show form to create a new transaction log entry
     public function create()

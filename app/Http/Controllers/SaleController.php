@@ -7,23 +7,50 @@ use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Customer;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 use App\Models\Account;
 use App\Models\TransactionLog;
 use App\Models\StockMovement;
-use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Carbon\Carbon;
 
 
 class SaleController extends Controller
 {
     // Show all sales
-    public function index()
+    public function index(Request $request)
     {
-        $sales = Sale::with('customer')->withCount('items')->latest()->simplePaginate(15);
-        $accounts = Account::all(); 
+        $query = Sale::with('customer')->withCount('items')->latest();
+
+        // Filter by customer name
+        if ($request->filled('customer_name')) {
+            $query->whereHas('customer', function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->customer_name . '%');
+            });
+        }
+
+        // Handle invalid date range
+        if ($request->filled('from_date') && $request->filled('to_date') && $request->to_date < $request->from_date) {
+            $sales = new LengthAwarePaginator([], 15, 15);
+            $accounts = Account::all();
+            return view('sales.index', compact('sales', 'accounts'))
+                ->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
+        }
+
+        // Filter by date
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        // Paginate results
+        $sales = $query->simplePaginate(15)->appends($request->all());
+        $accounts = Account::all();
 
         return view('sales.index', compact('sales', 'accounts'));
     }

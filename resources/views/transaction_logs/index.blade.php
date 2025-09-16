@@ -8,10 +8,23 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <form method="GET" class="mb-4">
-        <div class="row g-3 align-items-center">
-            <div class="col-auto">
-                <select name="account_id" class="form-select">
+    <!-- Display Validation Errors -->
+    @if ($errors->any())
+        <div class="alert alert-danger mt-3">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="GET" action="{{ route('transaction_logs.index') }}" class="mb-3">
+        <div class="row">
+            <!-- Account -->
+            <div class="col-md-3">
+                <label for="account_id">Account</label>
+                <select name="account_id" id="account_id" class="form-control">
                     <option value="">-- Select Account --</option>
                     @foreach($accounts as $account)
                         <option value="{{ $account->id }}" {{ request('account_id') == $account->id ? 'selected' : '' }}>
@@ -20,24 +33,36 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-auto">
-                <input type="text" name="transaction_type" class="form-control" placeholder="Transaction Type" value="{{ request('transaction_type') }}">
-            </div>
-            <div class="form-floating col-auto">
-                <input type="date" class="form-control" id="date_from" name="date_from" placeholder="From Date" value="{{ request('date_from') }}">
-                <label for="date_from" class="border-2">From Date</label>
+
+            <!-- Transaction Type -->
+            <div class="col-md-2">
+                <label for="transaction_type">Transaction Type</label>
+                <input type="text" name="transaction_type" id="transaction_type" class="form-control" 
+                    value="{{ request('transaction_type') }}" autocomplete="off">
             </div>
 
-            <div class="form-floating col-auto">
-                <input type="date" class="form-control" id="date_to" name="date_to" placeholder="To Date" value="{{ request('date_to') }}">
-                <label for="date_to"class="border-2">To Date</label>
+            <!-- From Date -->
+            <div class="col-md-2">
+                <label for="date_from">From Date</label>
+                <input type="date" name="date_from" id="date_from" class="form-control" 
+                    value="{{ request('date_from') }}">
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Filter</button>
-                <a href="{{ route('transaction_logs.index') }}" class="btn btn-secondary">Reset</a>
+
+            <!-- To Date -->
+            <div class="col-md-2">
+                <label for="date_to">To Date</label>
+                <input type="date" name="date_to" id="date_to" class="form-control" 
+                    value="{{ request('date_to') }}">
+            </div>
+
+            <!-- Buttons -->
+            <div class="col-md-3 d-flex align-items-end mt-2">
+                <button type="submit" class="btn btn-info m-1">Search</button>
+                <a href="{{ route('transaction_logs.index') }}" class="btn btn-secondary m-1">Reset</a>
             </div>
         </div>
     </form>
+
 
     <a href="{{ route('transaction_logs.create') }}" class="btn btn-success mb-3">Add New Transaction</a>
 

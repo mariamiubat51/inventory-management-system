@@ -2,22 +2,57 @@
 
 @section('content')
 <div class="container">
-    <h2 class="mb-4">
-        Product Units
-        <button class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#addUnitModal">➕ Add Unit</button>
-    </h2>
+    <h2 class="mb-4">Product Units</h2>
+
+    {{-- Display Validation Errors --}}
+        @if ($errors->any())
+            <div class="alert alert-danger mt-3">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+    {{-- Search Form --}}
+    <form method="GET" action="{{ route('products.units.index') }}" class="mb-3">
+        <div class="row">
+            <!-- Status -->
+            <div class="col-md-3">
+                <label for="status">Status</label>
+                <select name="status" class="form-control">
+                    <option value="">-- Select Status --</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+
+            <!-- From Date -->
+            <div class="col-md-3">
+                <label for="from_date">From Date</label>
+                <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}">
+            </div>
+
+            <!-- To Date -->
+            <div class="col-md-3">
+                <label for="to_date">To Date</label>
+                <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
+            </div>
+
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-info m-1">Search</button>
+                <a href="{{ route('products.units.index') }}" class="btn btn-secondary m-1">Reset</a>
+            </div>
+        </div>
+    </form>
+
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addUnitModal">➕ Add Unit</button>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
-    @if($errors->any())
-        <div class="alert alert-danger">
-            <strong>Validation error:</strong>
-            <ul class="mb-0">
-                @foreach($errors->all() as $error) <li>{{ $error }}</li> @endforeach
-            </ul>
-        </div>
-    @endif
+    
 
     <table class="table table-bordered table-hover align-middle table-striped text-center">
         <thead class="table-dark">
@@ -63,6 +98,11 @@
         @endforelse
         </tbody>
     </table>
+
+    <div class="mt-3">
+    {{ $units->links() }}
+  </div>
+
 </div>
 
 <!-- Add Unit Modal -->

@@ -7,18 +7,44 @@ use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\PurchaseItem;
 use App\Models\StockMovement;
+use App\Models\Account;
+use App\Models\TransactionLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Models\Account;
-use App\Models\TransactionLog;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 
 class PurchaseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $purchases = Purchase::with('supplier')->withCount('items')->latest()->simplePaginate(15);
+        $query = Purchase::with('supplier')->withCount('items')->latest();
+
+        // Filter by supplier name
+        if ($request->filled('supplier_name')) {
+            $query->whereHas('supplier', function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->supplier_name . '%');
+            });
+        }
+
+        // Handle invalid date range
+        if ($request->filled('from_date') && $request->filled('to_date') && $request->to_date < $request->from_date) {
+            $purchases = new LengthAwarePaginator([], 0, 15);
+            return view('purchases.index', compact('purchases'))
+                ->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
+        }
+
+        // Filter by date range
+        if ($request->filled('from_date')) {
+            $query->where('created_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->where('created_at', '<=', $request->to_date);
+        }
+
+        // Paginate
+        $purchases = $query->simplePaginate(15)->appends($request->all());
         $accounts = Account::all(); // required for due payment dropdown
 
         return view('purchases.index', compact('purchases', 'accounts'));

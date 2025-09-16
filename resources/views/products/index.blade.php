@@ -10,12 +10,24 @@
     <h2 class="mb-0">Product List</h2>
   </div>
 
+  
+    <!-- Display Validation Errors -->
+    @if ($errors->any())
+        <div class="alert alert-danger mt-3">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
   <form method="GET" action="{{ route('products.index') }}" class="mb-3">
       <div class="row">
           <!-- Product Name Filter -->
           <div class="col-md-3">
               <label for="product_name">Product Name</label>
-              <input type="text" name="product_name" class="form-control" value="{{ request('product_name') }}">
+              <input type="text" name="product_name" class="form-control" value="{{ request('product_name') }}" autocomplete="off">
           </div>
 
           <!-- From Date Filter -->
@@ -39,17 +51,6 @@
               <a href="{{ route('products.index') }}" class="btn btn-secondary m-1">Reset</a>
           </div>
       </div>
-
-      <!-- Display Validation Errors -->
-      @if ($errors->any())
-          <div class="alert alert-danger mt-3">
-              <ul>
-                  @foreach ($errors->all() as $error)
-                      <li>{{ $error }}</li>
-                  @endforeach
-              </ul>
-          </div>
-      @endif
   </form>
 
   <a href="{{ route('products.create') }}" class="btn btn-primary mb-3">

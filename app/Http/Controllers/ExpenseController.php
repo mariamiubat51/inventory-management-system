@@ -1,22 +1,54 @@
 <?php
 
-
 namespace App\Http\Controllers;
 
 use App\Models\Expense;
-use App\Models\ExpenseCategory;
-use App\Models\Account;
-use App\Models\TransactionLog;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ExpenseController extends Controller
 {
     // Show all expenses
-    public function index()
-    {
-        $expenses = Expense::with('category', 'account')->latest()->simplePaginate(15);
-        return view('expenses.index', compact('expenses'));
+    public function index(Request $request)
+{
+    // Start query with relationships
+    $query = Expense::with('category', 'account')->latest();
+
+    // Filter by category name
+    if ($request->filled('category_name')) {
+        $query->whereHas('category', function ($q) use ($request) {
+            $q->where('name', 'like', '%' . $request->category_name . '%');
+        });
     }
+
+    // Handle invalid date range
+    if ($request->filled('from_date') && $request->filled('to_date') && $request->to_date < $request->from_date) {
+        $expenses = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+        return view('expenses.index', compact('expenses'))
+            ->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
+    }
+
+    // Filter by date range
+    if ($request->filled('from_date')) {
+        $query->whereDate('created_at', '>=', $request->from_date);
+    }
+    if ($request->filled('to_date')) {
+        $query->whereDate('created_at', '<=', $request->to_date);
+    }
+
+    // Paginate results
+    $expenses = $query->simplePaginate(15)->appends($request->all());
+
+    return view('expenses.index', compact('expenses'));
+}
+
+
+
+    // public function index()
+    // {
+    //     $expenses = Expense::with('category', 'account')->latest()->simplePaginate(15);
+    //     return view('expenses.index', compact('expenses'));
+    // }
 
     // Show form to add expense
     public function create()
