@@ -84,9 +84,9 @@
                     <td>{{ $t->id }}</td>
                     <td>{{ $t->transaction_date->format('Y-m-d') }}</td>
                     <td>{{ $t->account->account_name ?? 'N/A' }}</td>
-                    <td>{{ ucfirst($t->type) }}</td>
+                    <td>{{ $t->type_label }}</td>
                     <td>{{ number_format($t->amount, 2) }}</td>
-                    <td>{{ ucfirst($t->transaction_type) }}</td>
+                    <td>{{ $t->transaction_type_label }}</td>
                     <td>{{ $t->description }}</td>
                 </tr>
             @empty
@@ -97,6 +97,8 @@
         </tbody>
     </table>
 
-    {{ $transactions->withQueryString()->links() }}
+    <div>
+        {{ $transactions->links() }}
+    </div>
 </div>
 @endsection

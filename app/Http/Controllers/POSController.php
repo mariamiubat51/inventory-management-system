@@ -25,15 +25,21 @@ class POSController extends Controller
         $customers = User::where('role', 'customer')->get();
         $accounts = Account::all();
 
-        $today = now()->toDateString();
-        $openRegister = CashRegister::where('date', now()->toDateString())->first();
-        $registerOpen = $openRegister && $openRegister->status === 'open' ? true : false;
+        // ✅ Ignore date, only check if any open register exists
+        $openRegister = CashRegister::where('status', 'open')->first();
+        $registerOpen = $openRegister ? true : false;
 
         return view('pos.index', compact('products', 'customers', 'accounts', 'openRegister', 'registerOpen'));
     }
 
     public function store(Request $request)
     {
+        $openRegister = CashRegister::where('status', 'open')->first();
+
+        if (!$openRegister) {
+            return redirect()->back()->with('error', 'You must open the register before making a sale.');
+        }
+        
         // --- FIX: Updated validation rules for new discount fields ---
         $request->validate([
             'customer_id' => 'required|string',
@@ -159,8 +165,9 @@ class POSController extends Controller
                 if ($account) {
                     $account->increment('total_balance', $paidAmount); // Use atomic update
                     TransactionLog::create([
-                        'transaction_date' => now(), 'transaction_type' => 'Income',
+                        'transaction_date' => now(), 'transaction_type' => 'Sale (POS)',
                         'account_id' => $account->id, 'amount' => $paidAmount,
+                        'type' => 'credit', 
                         'description' => 'POS Sale Invoice: ' . $sale->invoice_no,
                         'related_model' => 'Sale', 'related_model_id' => $sale->id,
                     ]);

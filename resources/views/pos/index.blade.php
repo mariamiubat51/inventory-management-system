@@ -234,10 +234,81 @@ document.addEventListener('DOMContentLoaded', function () {
     const walkInModalEl = document.getElementById('walkInModal');
     const walkInModal = new bootstrap.Modal(walkInModalEl);
     const customerSelect = document.getElementById('customer');
-
     const barcodeInput = document.getElementById('barcode');
     barcodeInput.focus(); // Focus at page load
 
+    // ---- CASH REGISTER CHECK FUNCTION ----
+    const registerOpen = {{ $registerOpen ? 'true' : 'false' }};
+    function requireRegisterOpen(callback) {
+        if (!registerOpen) {
+            alert("Cash register is not open for today. Please open it first.");
+            return false;
+        }
+        callback();
+    }
+
+    // Customer selection
+    customerSelect.addEventListener('change', function () {
+        requireRegisterOpen(() => {
+            if (this.value === 'walkin') {
+                walkInModal.show();
+            }
+        });
+    });
+
+    document.getElementById('saveWalkinBtn').addEventListener('click', function () {
+        const name = document.getElementById('walkin_name_modal').value.trim();
+        if (!name) { alert('Please enter the walk-in customer name.'); return; }
+
+        document.getElementById('walkin_name_hidden').value = name;
+        document.getElementById('walkin_email_hidden').value = document.getElementById('walkin_email_modal').value.trim();
+        document.getElementById('walkin_phone_hidden').value = document.getElementById('walkin_phone_modal').value.trim();
+        document.getElementById('walkin_address_hidden').value = document.getElementById('walkin_address_modal').value.trim();
+
+        walkInModal.hide();
+    });
+
+    // ---- CART & PRODUCT LOGIC ----
+    let cart = []; 
+    let userEditedPaid = false;
+
+    // Filter products
+    document.getElementById('product-search').addEventListener('input', function () {
+        const query = this.value.toLowerCase();
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.style.display = card.dataset.name.toLowerCase().includes(query) ? '' : 'none';
+        });
+    });
+
+    // Add product from card
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-to-cart')) {
+            requireRegisterOpen(() => {
+                const id = e.target.dataset.id;
+                const stock = parseInt(e.target.dataset.stock);
+                const name = e.target.dataset.name;
+                const price = parseFloat(e.target.dataset.price);
+                addProductToCart({ 
+                    id, 
+                    name, 
+                    selling_price: price, 
+                    stock_quantity: stock, 
+                    barcode: e.target.dataset.barcode 
+                });
+            });
+        }
+
+        // Remove item
+        if (e.target.classList.contains('remove-item')) {
+            requireRegisterOpen(() => {
+                const idToRemove = e.target.dataset.id;
+                cart = cart.filter(item => item.id !== idToRemove);
+                renderCart();
+            });
+        }
+    });
+
+    // Barcode scanning
     barcodeInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             requireRegisterOpen(() => {
@@ -255,50 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    customerSelect.addEventListener('change', function () {
-        requireRegisterOpen(() => {
-            if (this.value === 'walkin') {
-                walkInModal.show();
-            }
-        });
-    });
-
-    document.getElementById('saveWalkinBtn').addEventListener('click', function () {
-        const name = document.getElementById('walkin_name_modal').value.trim();
-        if (!name) {
-            alert('Please enter the walk-in customer name.');
-            return;
-        }
-        document.getElementById('walkin_name_hidden').value = name;
-        document.getElementById('walkin_email_hidden').value = document.getElementById('walkin_email_modal').value.trim();
-        document.getElementById('walkin_phone_hidden').value = document.getElementById('walkin_phone_modal').value.trim();
-        document.getElementById('walkin_address_hidden').value = document.getElementById('walkin_address_modal').value.trim();
-        walkInModal.hide();
-    });
-
-    // ---- CART & PRODUCT LOGIC ----
-    let cart = []; // Cart array
-    let userEditedPaid = false;
-
-    // Filter products based on search input
-    document.getElementById('product-search').addEventListener('input', function () {
-        const query = this.value.toLowerCase();
-        document.querySelectorAll('.product-card').forEach(card => {
-            card.style.display = card.dataset.name.toLowerCase().includes(query) ? '' : 'none';
-        });
-    });
-
-    //cash register
-    const registerOpen = {{ $registerOpen ? 'true' : 'false' }};
-    function requireRegisterOpen(callback) {
-        if (!registerOpen) {
-            alert("Cash register is not open for today. Please open it first.");
-            return false;
-        }
-        callback();
-    }
-
-    // ---- STEP 2: Add Product to Cart Function ----
+    // Add product to cart function
     function addProductToCart(product) {
         const existing = cart.find(item => item.id == product.id);
         if (existing) {
@@ -320,11 +348,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
         renderCart();
-
         showToast(`${product.name} added to cart!`, 'info');
     }
 
-    // Render cart table
+    // Render cart
     function renderCart() {
         const tbody = document.querySelector('#cart-table tbody');
         let cartHtml = '';
@@ -346,94 +373,65 @@ document.addEventListener('DOMContentLoaded', function () {
         updateTotals();
     }
 
-    // Update totals and discounts
+    // Update totals
     function updateTotals() {
         let subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-
         const discountValue = parseFloat(document.getElementById('discount_value').value) || 0;
         const discountType = document.getElementById('discount_type').value;
-        let discountAmount = 0;
-
-        if (discountType === 'percent') {
-            discountAmount = (subtotal * discountValue) / 100;
-        } else {
-            discountAmount = discountValue;
-        }
-
+        let discountAmount = discountType === 'percent' ? (subtotal * discountValue) / 100 : discountValue;
         let grandTotal = subtotal - discountAmount;
+
         document.getElementById('cart-total').innerText = subtotal.toFixed(2);
         document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
 
-        const paidField = document.getElementById('paid_amount');
         if (!userEditedPaid) {
-            paidField.value = grandTotal.toFixed(2);
+            document.getElementById('paid_amount').value = grandTotal.toFixed(2);
         }
         updateDue();
     }
 
-    // Update due amount
+    // Update due
     function updateDue() {
         const grandTotal = parseFloat(document.getElementById('grand-total').innerText) || 0;
         const paid = parseFloat(document.getElementById('paid_amount').value) || 0;
         document.getElementById('due_amount').value = (grandTotal - paid).toFixed(2);
     }
 
-    // ---- HANDLE CART EVENTS ----
-    document.addEventListener('click', function(e) {
-        // Add product from card
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('add-to-cart')) {
-                requireRegisterOpen(() => {
-                    const id = e.target.dataset.id;
-                    const stock = parseInt(e.target.dataset.stock);
-                    const name = e.target.dataset.name;
-                    const price = parseFloat(e.target.dataset.price);
-                    addProductToCart({ id, name, selling_price: price, stock_quantity: stock, barcode: e.target.dataset.barcode });
-                });
-            }
-        });
-
-        // Remove item
-        if (e.target.classList.contains('remove-item')) {
-            const idToRemove = e.target.dataset.id;
-            cart = cart.filter(item => item.id !== idToRemove);
-            renderCart();
-        }
-    });
-
-    // Update qty and price in cart table
+    // Update qty & price in cart
     document.querySelector('#cart-table').addEventListener('input', function(e) {
-        const target = e.target;
-        if (!target.classList.contains('qty') && !target.classList.contains('price')) return;
-        const index = target.dataset.index;
-        const item = cart[index];
-        if (!item) return;
+        requireRegisterOpen(() => {
+            const target = e.target;
+            if (!target.classList.contains('qty') && !target.classList.contains('price')) return;
+            const index = target.dataset.index;
+            const item = cart[index];
+            if (!item) return;
 
-        if (target.classList.contains('qty')) {
-            let newQty = parseInt(target.value) || 1;
-            if (newQty > item.stock) {
-                alert('Cannot add more. Only ' + item.stock + ' items left in stock.');
-                newQty = item.stock;
-                target.value = newQty;
+            if (target.classList.contains('qty')) {
+                let newQty = parseInt(target.value) || 1;
+                if (newQty > item.stock) {
+                    alert('Cannot add more. Only ' + item.stock + ' items left.');
+                    newQty = item.stock;
+                    target.value = newQty;
+                }
+                item.qty = newQty;
             }
-            item.qty = newQty;
-        }
 
-        if (target.classList.contains('price')) {
-            item.price = parseFloat(target.value) || 0;
-        }
+            if (target.classList.contains('price')) {
+                item.price = parseFloat(target.value) || 0;
+            }
 
-        const row = target.closest('tr');
-        row.querySelector('td:nth-child(4)').textContent = (item.qty * item.price).toFixed(2);
-        updateTotals();
+            const row = target.closest('tr');
+            row.querySelector('td:nth-child(4)').textContent = (item.qty * item.price).toFixed(2);
+            updateTotals();
+        });
     });
 
-    // Discount and paid inputs
+    // Discount & Paid inputs
     document.getElementById('paid_amount').addEventListener('input', function() { userEditedPaid = true; updateDue(); });
     document.getElementById('discount_value').addEventListener('input', updateTotals);
     document.getElementById('discount_type').addEventListener('change', updateTotals);
 
-    // ---- COMPLETE SALE ----
+    // Complete sale
     document.getElementById('complete-sale').addEventListener('click', function () {
         requireRegisterOpen(() => {
             if (cart.length === 0) { alert('Cart is empty.'); return; }
@@ -480,55 +478,29 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ---- BARCODE SCANNING ----
-    document.getElementById('barcode').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            const barcode = e.target.value.trim();
-            if (barcode !== '') {
-                fetch(`/pos/get-product/${barcode}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if(data.success) {
-                            addProductToCart(data.product); // Step 2 applied
-                        } else { alert('Product not found!'); }
-                    })
-                    .catch(err => console.error(err));
-            }
-            e.target.value = '';
-        }
-    });
+    // ---- TOAST FUNCTION ----
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-bg-${type} border-0 show`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toastEl);
+        const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+
 });
-
-function showToast(message, type = 'success') {
-    const toastContainer = document.getElementById('toast-container');
-
-    // Create toast element
-    const toastEl = document.createElement('div');
-    toastEl.className = `toast align-items-center text-bg-${type} border-0 show`;
-    toastEl.setAttribute('role', 'alert');
-    toastEl.setAttribute('aria-live', 'assertive');
-    toastEl.setAttribute('aria-atomic', 'true');
-
-    toastEl.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    `;
-
-    // Append toast to container
-    toastContainer.appendChild(toastEl);
-
-    // Initialize Bootstrap toast
-    const toast = new bootstrap.Toast(toastEl, { delay: 2000 });
-    toast.show();
-
-    // Remove toast from DOM after hiding
-    toastEl.addEventListener('hidden.bs.toast', () => {
-        toastEl.remove();
-    });
-}
-
 </script>
 
 @endsection

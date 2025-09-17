@@ -60,120 +60,125 @@ class PurchaseController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'supplier_id' => 'required|exists:suppliers,id',
-            'purchase_date' => 'required|date',
-            'product_id.*' => 'required|exists:products,id',
-            'quantity.*' => 'required|integer|min:1',
-            'buying_price.*' => 'required|numeric|min:0',
-            'paid_amount' => 'required|numeric|min:0',
-            'account_id' => 'required|exists:accounts,id',
+{
+    $request->validate([
+        'supplier_id' => 'required|exists:suppliers,id',
+        'purchase_date' => 'required|date',
+        'product_id.*' => 'required|exists:products,id',
+        'quantity.*' => 'required|integer|min:1',
+        'buying_price.*' => 'required|numeric|min:0',
+        'paid_amount' => 'required|numeric|min:0',
+        'account_id' => 'required|exists:accounts,id',
+    ]);
+
+    // Balance check  
+    $account = Account::find($request->account_id);
+    if (!$account) {
+        return back()->withInput()->withErrors(['account_id' => 'Selected account not found.']);
+    }
+    if ($request->paid_amount > $account->total_balance) {
+        return back()->withInput()->withErrors([
+            'paid_amount' => "Insufficient balance in the selected account. Available: {$account->total_balance}",
+        ]);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $totalAmount = 0;
+        $totalItems = count($request->product_id);
+        $invoice = 'PUR-' . strtoupper(Str::random(6));
+
+        // Calculate totals
+        foreach ($request->product_id as $index => $productId) {
+            $totalAmount += $request->quantity[$index] * $request->buying_price[$index];
+        }
+
+        $dueAmount = $totalAmount - $request->paid_amount;
+        $status = $dueAmount <= 0 ? 'fully_paid' : ($request->paid_amount > 0 ? 'partially_paid' : 'unpaid');
+
+        // Create purchase
+        $purchase = Purchase::create([
+            'supplier_id' => $request->supplier_id,
+            'invoice_no' => $invoice,
+            'purchase_date' => $request->purchase_date,
+            'total_amount' => $totalAmount,
+            'paid_amount' => $request->paid_amount,
+            'due_amount' => $dueAmount,
+            'item_count' => $totalItems,
+            'payment_status' => $status,
+            'purchase_status' => 'completed',
+            'notes' => $request->notes,
         ]);
 
-        // balance check  
-        $account = Account::find($request->account_id);
-        if (!$account) {
-            return back()->withInput()->withErrors(['account_id' => 'Selected account not found.']);
+        // Log the creation of the purchase
+        \Log::info("Purchase created: {$purchase->invoice_no}");
+
+        // Create the transaction log for the purchase
+        \Log::info("Creating transaction log for purchase #{$purchase->invoice_no}");
+
+        $transactionLog = TransactionLog::create([
+            'transaction_type' => 'Purchase',
+            'related_model' => 'Purchase',
+            'related_model_id' => $purchase->id,
+            'related_id' => $purchase->id,
+            'account_id' => $request->account_id,
+            'amount' => $request->paid_amount ?? 0,
+            'type' => 'debit',  // It's a debit for purchase
+            'transaction_date' => $request->purchase_date,
+            'description' => 'Purchase #' . $purchase->invoice_no,
+        ]);
+
+        // Log the result of transaction log creation
+        if ($transactionLog) {
+            \Log::info("Transaction log created for Purchase #{$purchase->invoice_no}");
+        } else {
+            \Log::error("Failed to create transaction log for Purchase #{$purchase->invoice_no}");
         }
-        if ($request->paid_amount > $account->total_balance) {
-            return back()->withInput()->withErrors([
-                'paid_amount' => "Insufficient balance in the selected account. Available: {$account->total_balance}",
+
+        // Update account balance
+        $account->total_balance -= $request->paid_amount;
+        $account->save();
+
+        // Create purchase items and update stock
+        foreach ($request->product_id as $index => $productId) {
+            $quantity = $request->quantity[$index];
+            $buyingPrice = $request->buying_price[$index];
+            $subtotal = $quantity * $buyingPrice;
+
+            PurchaseItem::create([
+                'purchase_id' => $purchase->id,
+                'product_id' => $productId,
+                'quantity' => $quantity,
+                'buying_price' => $buyingPrice,
+                'subtotal' => $subtotal,
+            ]);
+
+            // Update product stock
+            $product = Product::find($productId);
+            $product->stock_quantity += $quantity;
+            $product->buying_price = $buyingPrice;
+            $product->save();
+
+            StockMovement::create([
+                'product_id' => $product->id,
+                'movement_type' => 'in', // stock coming in
+                'quantity' => $quantity,
+                'balance' => $product->stock_quantity, // current stock after addition
+                'user_id' => auth()->id(),
+                'reference' => 'Purchase #' . $purchase->invoice_no,
+                'remarks' => 'Stock added from purchase',
             ]);
         }
 
-        DB::beginTransaction();
-
-        try {
-            $totalAmount = 0;
-            $totalItems = count($request->product_id);
-            $invoice = 'PUR-' . strtoupper(Str::random(6));
-
-            // Calculate totals
-            foreach ($request->product_id as $index => $productId) {
-                $totalAmount += $request->quantity[$index] * $request->buying_price[$index];
-            }
-
-            $dueAmount = $totalAmount - $request->paid_amount;
-            $status = $dueAmount <= 0 ? 'fully_paid' : ($request->paid_amount > 0 ? 'partially_paid' : 'unpaid');
-
-            // Create purchase
-            $purchase = Purchase::create([
-                'supplier_id' => $request->supplier_id,
-                'invoice_no' => $invoice,
-                'purchase_date' => $request->purchase_date,
-                'total_amount' => $totalAmount,
-                'paid_amount' => $request->paid_amount,
-                'due_amount' => $dueAmount,
-                'item_count' => $totalItems,
-                'payment_status' => $status,
-                'purchase_status' => 'completed',
-                'notes' => $request->notes,
-            ]);
-
-            // Create transaction log for paid amount (payment reduces cash, so debit)
-            if ($request->paid_amount > 0) {
-                try {
-                    $log = TransactionLog::create([
-                        'transaction_type' => 'purchase',
-                        'related_id' => $purchase->id,
-                        'account_id' => $request->account_id,
-                        'amount' => $request->paid_amount,
-                        'type' => 'debit',
-                        'transaction_date' => $request->purchase_date,
-                        'description' => 'Payment made for purchase #' . $purchase->invoice_no,
-                    ]);
-                    if (!$log) {
-                        \Log::error("Failed to create transaction log for purchase ID: " . $purchase->id);
-                    }
-                } catch (\Exception $e) {
-                    \Log::error("Transaction log creation error (store): " . $e->getMessage());
-                    throw $e;
-                }
-            }
-
-            $account->total_balance -= $request->paid_amount;
-            $account->save();
-
-
-            // Create purchase items and update stock
-            foreach ($request->product_id as $index => $productId) {
-                $quantity = $request->quantity[$index];
-                $buyingPrice = $request->buying_price[$index];
-                $subtotal = $quantity * $buyingPrice;
-
-                PurchaseItem::create([
-                    'purchase_id' => $purchase->id,
-                    'product_id' => $productId,
-                    'quantity' => $quantity,
-                    'buying_price' => $buyingPrice,
-                    'subtotal' => $subtotal,
-                ]);
-
-                // Update product stock
-                $product = Product::find($productId);
-                $product->stock_quantity += $quantity;
-                $product->buying_price = $buyingPrice;
-                $product->save();
-
-                StockMovement::create([
-                    'product_id' => $product->id,
-                    'movement_type' => 'in', // stock coming in
-                    'quantity' => $quantity,
-                    'balance' => $product->stock_quantity, // current stock after addition
-                    'user_id' => auth()->id(),
-                    'reference' => 'Purchase #' . $purchase->invoice_no,
-                    'remarks' => 'Stock added from purchase',
-                ]);
-            }
-
-            DB::commit();
-            return redirect()->route('purchases.index')->with('success', 'Purchase added successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Error: ' . $e->getMessage());
-        }
+        DB::commit();
+        return redirect()->route('purchases.index')->with('success', 'Purchase added successfully.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error("Error while storing purchase: " . $e->getMessage());
+        return back()->with('error', 'Error: ' . $e->getMessage());
     }
+}
 
     public function edit($id)
     {
@@ -194,10 +199,10 @@ class PurchaseController extends Controller
             'quantity.*' => 'required|integer|min:1',
             'buying_price.*' => 'required|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
-            'account_id' => 'required|exists:accounts,id',  // Added validation here
+            'account_id' => 'required|exists:accounts,id',
         ]);
 
-        // balance check 
+        // Balance check 
         $account = Account::find($request->account_id);
         if (!$account) {
             return back()->withInput()->withErrors(['account_id' => 'Selected account not found.']);
@@ -259,11 +264,13 @@ class PurchaseController extends Controller
             if ($request->paid_amount > 0) {
                 try {
                     $log = TransactionLog::create([
-                        'transaction_type' => 'purchase',
+                        'transaction_type' => 'Purchase', // <-- Capital P to match accessor
+                        'related_model' => 'Purchase',
+                        'related_model_id' => $purchase->id,
                         'related_id' => $purchase->id,
                         'account_id' => $request->account_id,
                         'amount' => $request->paid_amount,
-                        'type' => 'debit',
+                        'type' => 'debit',               // <-- Debit for purchase
                         'transaction_date' => $request->purchase_date,
                         'description' => 'Updated payment for purchase #' . $purchase->invoice_no,
                     ]);
@@ -283,7 +290,6 @@ class PurchaseController extends Controller
             $account->total_balance -= $request->paid_amount;
 
             $account->save();
-
 
             // Delete old purchase items
             $purchase->items()->delete();
@@ -323,6 +329,7 @@ class PurchaseController extends Controller
             return redirect()->route('purchases.index')->with('success', 'Purchase updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error("Error while updating purchase: " . $e->getMessage());
             return back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
@@ -369,14 +376,17 @@ class PurchaseController extends Controller
 
         // Log transaction
         TransactionLog::create([
+            'transaction_type' => 'Purchase',
+            'related_model' => 'Purchase',
+            'related_model_id' => $purchase->id,
+            'related_id' => $purchase->id,
             'account_id' => $account->id,
-            'transaction_type' => 'Debit',
             'amount' => $request->pay_amount,
-            'description' => 'Due payment for Purchase #' . $purchase->invoice_no,
+            'type' => 'debit',
             'transaction_date' => now(),
+            'description' => 'Due payment for Purchase #' . $purchase->invoice_no,
         ]);
 
-    return redirect()->route('purchases.index')->with('success', 'Due paid successfully.');
+        return redirect()->route('purchases.index')->with('success', 'Due paid successfully.');
     }
-
 }

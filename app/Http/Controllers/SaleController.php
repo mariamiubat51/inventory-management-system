@@ -182,12 +182,12 @@ class SaleController extends Controller
                     $account->total_balance += $request->paid_amount;
                     $account->save();
 
-                    // Create transaction log entry
                     TransactionLog::create([
                         'transaction_date' => Carbon::now(),
-                        'transaction_type' => 'Income',
+                        'transaction_type' => 'Sale',   // <-- change from 'Income' to 'Sale'
                         'account_id' => $account->id,
                         'amount' => $request->paid_amount,
+                        'type' => 'credit',              // <-- add this to match your mapping
                         'description' => 'Sale Invoice: ' . $sale->invoice_no,
                         'related_model' => 'Sale',
                         'related_model_id' => $sale->id,

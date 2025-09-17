@@ -9,6 +9,7 @@
     <table class="table table-striped table-bordered align-middle text-center">
         <thead class="table-dark">
             <tr>
+                <th>ID</th>
                 <th>Date</th>
                 <th>Type</th>
                 <th>Amount</th>
@@ -18,6 +19,7 @@
         <tbody>
             @foreach($entries as $entry)
             <tr>
+                <td>{{ $loop->iteration }}</td>
                 <td>{{ $entry->transaction_date->format('Y-m-d') }}</td>
                 <td>{{ ucfirst($entry->type) }}</td>
                 <td class="{{ $entry->type == 'debit' ? 'text-danger' : 'text-success' }}">
