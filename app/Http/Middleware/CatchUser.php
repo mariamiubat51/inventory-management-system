@@ -19,8 +19,8 @@ class CatchUser
         // Public routes (accessible without role check)
         $publicRoutes = [
             'login',
-            'logout',        // POST logout
-            'register',
+            'logout',        
+            //'register',
             'password.request',
             'password.email',
             'password.reset',
@@ -41,6 +41,14 @@ class CatchUser
         }
 
         $role = Auth::user()->role;
+
+        // Block customers completely (customer have not access)
+        if ($role === 'customer') {
+            Auth::logout();
+            return redirect()->route('login')->withErrors([
+                'email' => 'Customers are not allowed to log in.'
+            ]);
+        }
 
         // Admin can access everything
         if ($role === 'admin') {
@@ -69,15 +77,12 @@ class CatchUser
                 'customers.index','customers.create','customers.store','customers.edit','customers.update','customers.destroy',
                 'suppliers.index','suppliers.create','suppliers.store','suppliers.edit','suppliers.update','suppliers.destroy',
                 'purchases.index','purchases.create','purchases.store','purchases.edit', 'purchases.show','purchases.update','purchases.destroy','purchases.payDue',
-                'sales.index','sales.create','sales.store','sales.edit','sales.show','sales.update','sales.destroy','sales.payDue',
+                'sales.index','sales.create','sales.store','sales.edit','sales.show','sales.update','sales.destroy','sales.payDue', 
+                'pos.index','pos.store','cashregister.index','cashregister.open','cashregister.close',
                 'expenses.index','expenses.create','expenses.store','expenses.edit','expenses.update','expenses.destroy',
-                'expense-categories.index','expense-categories.create','expense-categories.store','expense-categories.edit','expense-categories.update','expense-categories.destroy',
+                'expense-categories.index','expense-categories.create','expense-categories.store','expense-categories.edit',
+                'expense-categories.update','expense-categories.destroy',
                 'reports.profit','reports.inventory','reports.sales','reports.purchases','reports.expenses',
-            ],
-
-            'customer' => [
-                'dashboard',
-                'sales.index','sales.show',
             ],
         ];
 

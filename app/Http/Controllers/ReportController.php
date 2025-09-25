@@ -26,48 +26,57 @@ class ReportController extends Controller
 
     public function profit(Request $request)
     {
-        // 1. Date range filter
-        $from_date = $request->from_date ?? Carbon::now()->startOfMonth()->format('Y-m-d');
-        $to_date   = $request->to_date ?? Carbon::now()->format('Y-m-d');
+        // 1. Get raw input
+        $inputFrom = $request->from_date;
+        $inputTo   = $request->to_date;
 
-        // 2. Fetch sales
+        // 2. Validate date range
+        $invalidRange = false;
+        if ($inputFrom && $inputTo && $inputTo < $inputFrom) {
+            $invalidRange = true;
+            $from_date = $inputFrom;
+            $to_date = $inputTo;
+            $sales = collect(); // empty collection
+            $expenses = collect(); // empty collection
+            $totalSales = $totalCOGS = $grossProfit = $totalExpenses = $netProfit = 0;
+            $chartLabels = [];
+            $chartProfit = [];
+            return view('reports.profit', compact(
+                'from_date','to_date','sales','expenses',
+                'totalSales','totalCOGS','grossProfit','totalExpenses','netProfit',
+                'chartLabels','chartProfit'
+            ))->withErrors(['to_date' => 'The "To Date" must be greater than or equal to the "From Date".']);
+        }
+
+        // 3. Set default dates
+        $from_date = $inputFrom ?? \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
+        $to_date   = $inputTo ?? \Carbon\Carbon::now()->format('Y-m-d');
+
+        // 4. Fetch sales
         $sales = Sale::with('items.product')
             ->whereBetween('sale_date', [$from_date, $to_date])
             ->get();
 
-        // 3. Fetch expenses
+        // 5. Fetch expenses
         $expenses = Expense::whereBetween('date', [$from_date, $to_date])->get();
 
-        // 4. Calculate totals
+        // 6. Calculate totals
         $totalSales = $sales->sum('grand_total');
-
         $totalCOGS = $sales->sum(function($sale){
             return $sale->items ? $sale->items->sum(fn($item) => $item->quantity * ($item->product->buying_price ?? 0)) : 0;
         });
-
         $grossProfit = $totalSales - $totalCOGS;
-
         $totalExpenses = $expenses->sum('amount');
-
         $netProfit = $grossProfit - $totalExpenses;
 
+        // 7. Prepare chart data
+        $chartData = $sales->groupBy(fn($sale) => \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d'))
+            ->map(fn($dailySales) => $dailySales->sum('grand_total') - $dailySales->sum(fn($sale) => $sale->items ? $sale->items->sum(fn($item) => $item->quantity * ($item->product->buying_price ?? 0)) : 0));
 
-        // 5. Prepare data for chart (profit per day)
-        $chartData = $sales->groupBy(function($sale) {
-            return Carbon::parse($sale->sale_date)->format('Y-m-d'); // group by date only
-        })->map(function($dailySales) {
-            $dailyTotal = $dailySales->sum('grand_total');
-            $dailyCOGS = $dailySales->sum(function($sale) {
-                return $sale->items ? $sale->items->sum(fn($item) => $item->quantity * ($item->product->buying_price ?? 0)) : 0;
-            });
-            return $dailyTotal - $dailyCOGS;
-        });
+        $chartLabels = $chartData->keys();
+        $chartProfit = $chartData->values();
 
-        $chartLabels = $chartData->keys();   // just dates
-        $chartProfit = $chartData->values(); // profit values
-
-
-        // 6. Return view with all data
+        // 8. Return view
         return view('reports.profit', compact(
             'from_date','to_date','sales','expenses',
             'totalSales','totalCOGS','grossProfit','totalExpenses','netProfit',
@@ -76,52 +85,68 @@ class ReportController extends Controller
     }
 
     public function sales(Request $request)
-    {
-        // 1 Default date filter to include all sales
-        $fromDate = $request->input('from_date', now()->toDateString());
-        $toDate   = $request->input('to_date', now()->toDateString());
+{
+    // 1. Date range filter (default: first day of month to today)
+    $fromDate = $request->input('from_date') ?? \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
+    $toDate   = $request->input('to_date')   ?? \Carbon\Carbon::now()->format('Y-m-d');
 
-        // 2 Start query
+    $errorMessage = null; // to store error message
+    $sales = collect();   // empty collection if error
+    $chartData = collect(); 
+
+    // 2. Check if from_date > to_date
+    if ($fromDate > $toDate) {
+        $errorMessage = "From Date cannot be greater than To Date.";
+    } else {
+        // 3. Start query
         $query = Sale::with('customer');
 
-        // 3 Apply filters
+        // 4. Apply filters
         $query->whereBetween('sale_date', [$fromDate, $toDate]);
-
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
         }
 
-        // 4 Prepare chart data
-        $chartData = (clone $query)
-            ->select(
-                DB::raw('DATE(sale_date) as date'),
-                DB::raw('SUM(grand_total) as total')
-            )
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
-
-        // 5 Get table data
+        // 5. Get table data
         $sales = $query->orderBy('sale_date', 'desc')->get();
 
-        // 6 Calculate totals
-        $totalSales = $sales->sum('grand_total');
-        $totalPaid  = $sales->sum('paid_amount');
-        $totalDue   = $sales->sum('due_amount');
+        // 6. Prepare chart data
+        $chartData = $sales->groupBy(function($item) {
+            return \Carbon\Carbon::parse($item->sale_date)->format('Y-m-d');
+        })->map(function($group) {
+            return $group->sum('grand_total');
+        });
 
-        // 7 Get customers for dropdown
-        $customers = User::orderBy('name')->get(); // Use Customer::orderBy('name')->get() if separate table
-
-        return view('reports.sales', [
-            'sales'       => $sales,
-            'customers'   => $customers,
-            'totalSales'  => $totalSales,
-            'totalPaid'   => $totalPaid,
-            'totalDue'    => $totalDue,
-            'chartLabels' => $chartData->pluck('date'),
-            'chartValues' => $chartData->pluck('total'),
-        ]);
+        // 7. If no data found
+        if ($sales->count() === 0) {
+            $errorMessage = "No data found for the selected filters.";
+        }
     }
+
+    // 8. Calculate totals (only if data exists)
+    $totalSales = $sales->sum('grand_total');
+    $totalPaid  = $sales->sum('paid_amount');
+    $totalDue   = $sales->sum('due_amount');
+
+    // 9. Get customers for dropdown
+    $customers = User::orderBy('name')->get();
+
+    // 10. Return view
+    return view('reports.sales', [
+        'sales'       => $sales,
+        'customers'   => $customers,
+        'totalSales'  => $totalSales,
+        'totalPaid'   => $totalPaid,
+        'totalDue'    => $totalDue,
+        'chartLabels' => $chartData->keys(),
+        'chartValues' => $chartData->values(),
+        'from_date'   => $fromDate,
+        'to_date'     => $toDate,
+        'errorMessage'=> $errorMessage, // pass error message to Blade
+    ]);
+}
+
+
 
     public function purchases(Request $request)
     {

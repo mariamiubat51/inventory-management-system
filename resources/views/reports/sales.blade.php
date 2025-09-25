@@ -1,10 +1,47 @@
 @extends('layouts.app')
 
 @section('content')
+
+<style>
+    @media print {
+        /* Hide non-print elements */
+        .no-print {
+            display: none !important;
+        }
+
+        .main-content {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Make chart full width in print */
+        #salesChart {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        table {
+            width: 100% !important;
+            page-break-inside: auto;
+        }
+
+        table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+    }
+</style>
+
 <div class="container-fluid">
     <h2 class="mb-4">Sales Report</h2>
 
-    <div class="row mb-4">
+    @if($errorMessage)
+        <div class="alert alert-danger">{{ $errorMessage }}</div>
+    @endif
+
+    @if(!$errorMessage)
+    <div class="row mb-4 no-print">
         <div class="col-xl-4 col-md-6 mb-3">
             <div class="card text-white bg-primary shadow">
                 <div class="card-body">
@@ -30,8 +67,9 @@
             </div>
         </div>
     </div>
+    @endif
 
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 no-print">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Filter Report</h6>
         </div>
@@ -40,13 +78,15 @@
                 <div class="row align-items-end">
                     <div class="col-md-3 mb-2">
                         <label for="from_date">From Date</label>
-                        <input type="date" id="from_date" name="from_date" class="form-control" value="{{ request('from_date', now()->startOfMonth()->format('Y-m-d')) }}">
+                        <input type="date" id="from_date" name="from_date" class="form-control"
+                            value="{{ request('from_date', $from_date) }}">
                     </div>
                     <div class="col-md-3 mb-2">
                         <label for="to_date">To Date</label>
-                        <input type="date" id="to_date" name="to_date" class="form-control" value="{{ request('to_date', now()->format('Y-m-d')) }}">
+                        <input type="date" id="to_date" name="to_date" class="form-control"
+                            value="{{ request('to_date', $to_date) }}">
                     </div>
-                    <div class="col-md-3 mb-2">
+                    <div class="col-md-2 mb-2">
                         <label for="customer">Customer</label>
                         <select name="customer_id" id="customer" class="form-control">
                             <option value="">All Customers</option>
@@ -57,14 +97,18 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3 mb-2">
+                    <div class="col-md-2 mb-2">
                         <button class="btn btn-primary w-100">Apply Filter</button>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <button onclick="printReport()" class="btn btn-success">Print Report</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
+    @if(!$errorMessage)
     <div class="card shadow mb-4">
         <div class="card-header">
             <h6 class="m-0 font-weight-bold text-primary">Sales Trend</h6>
@@ -121,6 +165,7 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 
@@ -129,6 +174,10 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <script>
+    function printReport() {
+        window.print();
+    }
+
     // Chart.js with DYNAMIC data
     const ctx = document.getElementById('salesChart');
     new Chart(ctx, {
@@ -151,9 +200,9 @@
         }
     });
 
-    // DataTables.js
-    $(document).ready(function() {
-        $('#salesDataTable').DataTable();
-    });
+    // // DataTables.js
+    // $(document).ready(function() {
+    //     $('#salesDataTable').DataTable();
+    // });
 </script>
 @endpush

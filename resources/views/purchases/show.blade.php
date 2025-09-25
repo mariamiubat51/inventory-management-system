@@ -4,8 +4,14 @@
 
 <style>
     @media print {
-        .btn, .card-header, .card-footer {
+        .no-print {
             display: none !important;
+        }
+
+        .main-content {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
     }
 </style>
@@ -14,7 +20,7 @@
     <div class="card shadow rounded">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>Purchase Invoice</h4>
-            <a href="{{ route('purchases.index') }}" class="btn btn-secondary btn-sm">Back</a>
+            <a href="{{ route('purchases.index') }}" class="btn btn-secondary btn-sm no-print">Back</a>
         </div>
 
         <div class="card-body">
@@ -83,7 +89,7 @@
             </div>
 
             <div class="text-center mt-4">
-                <button onclick="window.print()" class="btn btn-primary">
+                <button onclick="window.print()" class="btn btn-primary no-print">
                     <i class="fa fa-print"></i> Print Invoice
                 </button>
             </div>

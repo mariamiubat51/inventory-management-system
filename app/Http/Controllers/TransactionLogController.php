@@ -11,7 +11,7 @@ class TransactionLogController extends Controller
     // List all transactions with pagination and optional filtering
     public function index(Request $request)
     {
-        $query = TransactionLog::with('account')->orderBy('transaction_date', 'desc');
+        $query = TransactionLog::with('account')->orderBy('id', 'desc');
 
         // Handle invalid date range first
         if ($request->filled('date_from') && $request->filled('date_to') && $request->date_to < $request->date_from) {

@@ -1,11 +1,55 @@
 @extends('layouts.app')
 
 @section('content')
+
+<style>
+    @media print {
+        /* Hide non-print elements */
+        .no-print {
+            display: none !important;
+        }
+
+        .main-content {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Make chart full width in print */
+        #profitChart {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        table {
+            width: 100% !important;
+            page-break-inside: auto;
+        }
+
+        table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+    }
+</style>
+
 <div class="container-fluid">
     <h2 class="mb-4">Profit Report</h2>
+    
+    <!-- Display Validation Errors -->
+    @if($errors->any())
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
+    @if($sales->count() > 0 || $expenses->count() > 0)
+    <div class="row mb-4 no-print">
         <div class="col-xl-4 col-md-6 mb-3">
             <div class="card text-white bg-primary shadow">
                 <div class="card-body">
@@ -47,9 +91,10 @@
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Filter Section -->
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 no-print">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="m-0 font-weight-bold text-primary">Filter Report</h6>
         </div>
@@ -78,6 +123,7 @@
     </div>
 
     <div id="reportContent">
+        @if($sales->count() > 0 || $expenses->count() > 0)
         <!-- Chart Section -->
         <div class="card shadow mb-4">
             <div class="card-header">
@@ -121,7 +167,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center">No sales found.</td>
+                                <td colspan="6" class="text-center">No sales found.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -129,6 +175,7 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
 @endsection
@@ -139,17 +186,7 @@
 
 <script>
     function printReport() {
-        // by giving the report a container div like <div id="reportContent">...</div>
-
-        var printContents = document.getElementById('reportContent').innerHTML;
-        var originalContents = document.body.innerHTML;
-
-        document.body.innerHTML = printContents;
-
-        window.print(); // Open print dialog
-
-        document.body.innerHTML = originalContents; // Restore page after printing
-        location.reload(); // Optional: reload page to restore JS functionality
+        window.print();
     }
 
     // Chart.js with DYNAMIC data
@@ -173,9 +210,9 @@
     });
 
     // DataTables.js
-    $(document).ready(function() {
-        $('#profitDataTable').DataTable();
-    });
+    // $(document).ready(function() {
+    //     $('#profitDataTable').DataTable();
+    // });
 </script>
 @endpush
 

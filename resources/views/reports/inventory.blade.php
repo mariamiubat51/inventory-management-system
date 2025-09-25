@@ -1,11 +1,43 @@
 @extends('layouts.app')
 
 @section('content')
+
+<style>
+    @media print {
+        /* Hide non-print elements */
+        .no-print {
+            display: none !important;
+        }
+
+        .main-content {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Make chart full width in print */
+        #stockChart {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        table {
+            width: 100% !important;
+            page-break-inside: auto;
+        }
+
+        table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+    }
+</style>
+
 <div class="container-fluid">
     <h2 class="mb-4">Inventory Report</h2>
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
+    <div class="row mb-4 no-print">
         <div class="col-xl-3 col-md-6 mb-3">
             <div class="card text-white bg-primary shadow">
                 <div class="card-body">
@@ -43,14 +75,22 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="card shadow mb-4">
+    <div class="card shadow mb-4 no-print">
         <div class="card-header">
             <h6 class="m-0 font-weight-bold text-primary">Filter Report</h6>
         </div>
         <div class="card-body">
             <form method="GET">
                 <div class="row align-items-end">
-                    <div class="col-md-4 mb-2">
+                    <div class="col-md-3 mb-2">
+                        <label for="from_date">From Date</label>
+                        <input type="date" id="from_date" name="from_date" value="{{ $from_date }}" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label for="to_date">To Date</label>
+                        <input type="date" id="to_date" name="to_date" value="{{ $to_date }}" class="form-control">
+                    </div>
+                    <div class="col-md-2 mb-2">
                         <label for="product_id">Product</label>
                         <select name="product_id" id="product_id" class="form-select">
                             <option value="">All Products</option>
@@ -61,16 +101,11 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3 mb-2">
-                        <label for="from_date">From Date</label>
-                        <input type="date" id="from_date" name="from_date" value="{{ $from_date }}" class="form-control">
-                    </div>
-                    <div class="col-md-3 mb-2">
-                        <label for="to_date">To Date</label>
-                        <input type="date" id="to_date" name="to_date" value="{{ $to_date }}" class="form-control">
-                    </div>
                     <div class="col-md-2 mb-2">
                         <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <button onclick="printReport()" class="btn btn-success">Print Report</button>
                     </div>
                 </div>
             </form>
@@ -145,6 +180,10 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <script>
+    function printReport() {
+        window.print();
+    }
+    
     // Chart.js
     const ctx = document.getElementById('stockChart').getContext('2d');
     const stockChart = new Chart(ctx, {
@@ -166,8 +205,8 @@
     });
 
     // DataTables.js
-    $(document).ready(function() {
-        $('#inventoryDataTable').DataTable();
-    });
+    // $(document).ready(function() {
+    //     $('#inventoryDataTable').DataTable();
+    // });
 </script>
 @endpush

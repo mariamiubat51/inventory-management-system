@@ -99,7 +99,7 @@ class AccountController extends Controller
         $account = Account::findOrFail($id);
 
         $entries = \App\Models\TransactionLog::where('account_id', $id)
-                    ->orderBy('transaction_date', 'desc')
+                    ->orderBy('id', 'desc')
                     ->get();
 
         return view('accounts.ledger', compact('account', 'entries'));
